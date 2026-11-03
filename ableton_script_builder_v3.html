@@ -263,6 +263,60 @@
   .splash-credit { position: absolute; bottom: 40px; left: 0; right: 0; text-align: center; font: 500 12px/1.8 var(--sans); letter-spacing: .16em; color: color-mix(in srgb, var(--text) 55%, var(--bg)); animation: rise .8s .24s ease both; }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 
+
+  /* ── About: the moon, the name, who made it, every link ── */
+  .btn-icon { width: 32px; padding: 0; justify-content: center; }
+  .config-brand, .credit { cursor: pointer; }
+  .credit:hover { color: var(--violet); }
+  .abtdim { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: color-mix(in srgb, var(--bg) 62%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: fadeIn .2s ease both; }
+  .abtdim.out { animation: fadeOut .2s ease both; }
+  @keyframes fadeIn { from { opacity: 0; } }
+  @keyframes fadeOut { to { opacity: 0; } }
+  .abtcard { position: relative; display: flex; gap: 30px; width: min(900px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 30px 32px 26px;
+    background: color-mix(in srgb, var(--bg2) 88%, transparent); border: 1px solid var(--border2); border-radius: 22px;
+    box-shadow: 0 40px 90px -40px #000, 0 0 0 1px color-mix(in srgb, #fff 3%, transparent) inset, 0 -30px 80px -60px var(--accent) inset; animation: rise .35s cubic-bezier(.2,.8,.2,1) both; }
+  .abtx { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: none; color: var(--text2); font-size: 15px; cursor: pointer; transition: all .15s; }
+  .abtx:hover { border-color: var(--accent); color: var(--accent); }
+  .abtme { flex: 0 0 340px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .abtme .export-moon { width: 240px; height: auto; aspect-ratio: 200 / 124; margin: 0 0 4px; }
+  .abtname { color: transparent; -webkit-text-stroke: 1.2px var(--accent); font: 650 34px/1 var(--sans); letter-spacing: .3em; padding-left: .3em; }
+  .abtver { margin-top: 12px; display: inline-flex; gap: 8px; align-items: center; padding: 5px 12px; border-radius: 999px; background: color-mix(in srgb, var(--violet) 12%, transparent);
+    font: 600 9px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
+  .abtver b { color: var(--violet); }
+  .abtcredit { margin-top: 22px; font: 600 12px/1.3 var(--sans); letter-spacing: .18em; padding-left: .18em; color: var(--text); }
+  .abtlab { margin-top: 6px; font: 500 11px/1.3 var(--sans); letter-spacing: .18em; padding-left: .18em; color: var(--accent); }
+  .abtlinks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; margin-top: 22px; width: 100%; }
+  .abtlinks a { display: flex; align-items: center; gap: 9px; height: 38px; padding: 0 12px; border-radius: 12px; text-decoration: none; color: var(--text);
+    border: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 50%, transparent); font: 500 12.5px var(--sans); transition: border-color .15s, color .15s, transform .15s, box-shadow .2s; }
+  .abtlinks a svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--text2); transition: color .15s; }
+  .abtlinks a .abtarr { margin-left: auto; font-size: 11px; color: var(--text3); transition: transform .15s, color .15s; }
+  .abtlinks a:hover, .abtlinks a:focus-visible { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 8px 22px -12px var(--accent); outline: none; }
+  .abtlinks a:hover svg, .abtlinks a:hover .abtarr { color: var(--accent); }
+  .abtlinks a:hover .abtarr { transform: translate(2px, -2px); }
+  .abtsupport { grid-column: 1 / -1; margin-top: 8px; font: 600 8.5px/1 var(--mono); letter-spacing: .26em; text-transform: uppercase; color: var(--salmon); text-align: left; padding-left: 2px; }
+  .abtlinks a.give { border-color: color-mix(in srgb, var(--salmon) 35%, transparent); background: color-mix(in srgb, var(--salmon) 7%, transparent); }
+  .abtlinks a.give svg { color: var(--salmon); }
+  .abtlinks a.give:hover { border-color: var(--salmon); box-shadow: 0 8px 22px -12px var(--salmon); }
+  .abtlinks a.give:hover svg, .abtlinks a.give:hover .abtarr { color: var(--salmon); }
+  .abtpane { flex: 1 1 0; min-width: 0; margin-top: 18px; padding-right: 4px; text-align: left; font-size: 12.5px; line-height: 1.65; color: var(--text2); overflow: auto; }
+  .abtpane h4 { display: flex; align-items: center; gap: 10px; margin: 20px 0 8px; font: 600 9px/1 var(--mono); letter-spacing: .26em; text-transform: uppercase; color: var(--violet); }
+  .abtpane h4:first-child { margin-top: 0; }
+  .abtpane h4::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border2), transparent); }
+  .abtpane p + p { margin-top: 8px; }
+  .abtpane b { color: var(--text); font-weight: 600; }
+  .abtpane ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .abtpane li { position: relative; padding-left: 16px; }
+  .abtpane li::before { content: ''; position: absolute; left: 2px; top: .62em; width: 5px; height: 5px; border-radius: 50%; border: 1.2px solid var(--accent); }
+  .abtpane a { color: var(--accent); text-decoration: none; }
+  .abtpane a:hover { text-decoration: underline; }
+  .abtsign { color: var(--accent); font-style: italic; }
+  .abtfoot { margin-top: 18px; font-size: 10.5px; color: var(--text3); line-height: 1.6; }
+  @media (max-width: 820px) {
+    .abtcard { flex-direction: column; gap: 0; padding: 26px 20px 20px; }
+    .abtme { flex: none; }
+    .abtpane { overflow: visible; }
+  }
   @media (max-width: 600px) {
     .credit { flex-wrap: wrap; white-space: normal; gap: 4px 10px; }
     .credit b, .credit i:first-of-type { display: none; }
@@ -291,7 +345,7 @@
 
   <div class="config-panel">
     <div class="config-row">
-      <div class="config-brand" title="Universal Surface Generator v2 · Emerald Moon Labs &amp; Stanley Gurvich">
+      <div class="config-brand" title="About Universal Surface Generator" onclick="aboutOpen()">
         <span data-moon="mark"></span>
         <div class="brand-words">
           <div class="brand-title"><span class="brand-name">SURFACE</span><span class="v2-badge">V2</span></div>
@@ -341,6 +395,7 @@
       <div class="config-actions">
         <button class="btn-sm" onclick="saveStateJSON()" title="Export mappings as JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>Save</button>
         <label class="btn-sm" title="Import saved mappings JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9M7 14l5-5 5 5"/><path d="M5 3h14"/></svg>Load<input type="file" accept=".json" style="display:none" onchange="loadStateJSON(this)"></label>
+        <button class="btn-sm btn-icon" onclick="aboutOpen()" title="About" aria-label="About"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.01"/></svg></button>
         <div class="config-midi-status">
           <div class="topbar-midi">
             <div class="midi-dot" id="midiDot"></div>
@@ -382,7 +437,7 @@
       <button class="btn-clear-side" onclick="clearAll()">Clear All Mappings</button>
     </div>
   </div>
-  <div class="credit"><b>SURFACE GENERATOR</b><i></i>Stanley Gurvich<i></i>Emerald Moon Labs 2026</div>
+  <div class="credit" onclick="aboutOpen()" title="About"><b>SURFACE GENERATOR</b><i></i>Stanley Gurvich<i></i>Emerald Moon Labs 2026</div>
 </div>
 </div>
 
@@ -1868,6 +1923,68 @@ document.querySelectorAll('[data-moon]').forEach(el => { el.outerHTML = moonSVG(
 // the opening: over the sky a moment, then out (a click skips it)
 function splashOut() { const sp = document.getElementById('splash'); if (!sp || sp.classList.contains('out')) return; sp.classList.add('out'); setTimeout(() => sp.remove(), 500); }
 setTimeout(splashOut, matchMedia('(prefers-reduced-motion: reduce)').matches ? 500 : 1700);
+
+// ── About: the moon, the name, who made it, every link ──
+const ABOUT_LINKS = [
+  ['Website', 'https://www.stanleygurvich.com', 'web'], ['GitHub', 'https://github.com/stanleygurvich', 'github'],
+  ['Discord', 'https://discord.gg/x8AMnBVPXj', 'discord'], ['Instagram', 'https://www.instagram.com/stanleygurvich/', 'instagram'],
+  ['YouTube', 'https://www.youtube.com/@StanleyGurvich', 'youtube'],
+];
+const SUPPORT_LINKS = [['Patreon', 'https://www.patreon.com/stanleygurvich', 'patreon'], ['Ko-fi', 'https://ko-fi.com/stanleygurvich', 'kofi']];
+const ICON = {
+  web: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M2.8 12h18.4M12 2.8c2.6 2.6 3.8 5.6 3.8 9.2s-1.2 6.6-3.8 9.2c-2.6-2.6-3.8-5.6-3.8-9.2S9.4 5.4 12 2.8z"/></svg>',
+  github: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.39-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>',
+  discord: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.32 4.37A19.8 19.8 0 0 0 15.4 2.85a13.8 13.8 0 0 0-.63 1.29 18.3 18.3 0 0 0-5.5 0 13 13 0 0 0-.64-1.29 19.7 19.7 0 0 0-4.92 1.52C.6 9.05-.24 13.6.18 18.1a19.9 19.9 0 0 0 6.03 3.05 14.6 14.6 0 0 0 1.29-2.1 12.9 12.9 0 0 1-2.03-.97l.5-.39a14.2 14.2 0 0 0 12.06 0l.5.39c-.65.38-1.33.71-2.04.97.37.74.8 1.44 1.29 2.1a19.8 19.8 0 0 0 6.04-3.05c.5-5.22-.84-9.73-3.5-13.73zM8.02 15.33c-1.18 0-2.16-1.09-2.16-2.42s.96-2.42 2.16-2.42c1.21 0 2.18 1.1 2.16 2.42 0 1.33-.96 2.42-2.16 2.42zm7.97 0c-1.19 0-2.16-1.09-2.16-2.42s.95-2.42 2.16-2.42c1.2 0 2.17 1.1 2.15 2.42 0 1.33-.95 2.42-2.15 2.42z"/></svg>',
+  instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><circle cx="12" cy="12" r="4.3"/><circle cx="17.6" cy="6.4" r=".9" fill="currentColor" stroke="none"/></svg>',
+  youtube: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-4.8 31 31 0 0 0-.5-4.8ZM9.8 15.1V8.9L15.6 12l-5.8 3.1Z"/></svg>',
+  patreon: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="14.6" cy="9.4" r="7.1"/><rect x="2.4" y="2.3" width="3.6" height="19.4" rx=".6"/></svg>',
+  kofi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z"/><path d="M16 9.5h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 4.5c0 1 1 1 1 2M11.5 4.5c0 1 1 1 1 2"/></svg>',
+};
+function aboutOpen() {
+  if (document.querySelector('.abtdim')) return;
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const link = ([name, href, icon], give) => `<a href="${href}" target="_blank" rel="noopener noreferrer"${give ? ' class="give"' : ''} title="${esc(href.replace(/^https?:\/\/(www\.)?/, ''))}">${ICON[icon]}${name}<span class="abtarr">↗</span></a>`;
+  const dim = document.createElement('div');
+  dim.className = 'abtdim';
+  dim.innerHTML = `<div class="abtcard" role="dialog" aria-modal="true" aria-label="About Universal Surface Generator">
+    <button type="button" class="abtx" aria-label="Close" title="Close (Esc)">✕</button>
+    <div class="abtme">
+      ${moonSVG('full')}
+      <div class="abtname">SURFACE</div>
+      <div class="abtver"><b>v2</b>Universal Surface Generator</div>
+      <div class="abtcredit">Stanley Gurvich</div>
+      <div class="abtlab">Emerald Moon Labs · 2026</div>
+      <nav class="abtlinks" aria-label="Links">${ABOUT_LINKS.map(l => link(l)).join('')}
+        <div class="abtsupport">Support the lab</div>${SUPPORT_LINKS.map(l => link(l, true)).join('')}</nav>
+    </div>
+    <div class="abtpane">
+      <h4>What it is</h4>
+      <p><b>Universal Surface Generator</b> turns any MIDI controller into a proper Ableton Live control surface. Map your pads, buttons, knobs and faders by wiggling them, and it writes a complete Python Remote Script for Live, ready to drop into your User Remote Scripts folder.</p>
+      <h4>What it maps</h4>
+      <ul>
+        <li><b>Session grid:</b> clip launch, scene launch, track stop, arm, solo, mute and select, any size up to 16×16.</li>
+        <li><b>Mixer:</b> volume, pan, sends A and B, master and crossfader.</li>
+        <li><b>Transport and navigation:</b> play, stop, record, overdub, undo, metronome, tempo, the session ring and shift.</li>
+        <li><b>Fixed length and quantize:</b> Push-style clip lengths, launch quantization and MIDI record quantization.</li>
+        <li><b>LED feedback:</b> a skin of colours for every state, sent back to your controller.</li>
+      </ul>
+      <h4>How to use it</h4>
+      <p>Open it in Chrome or Edge, pick your controller under MIDI In (and MIDI Out for LEDs), click a control and move the matching one on your hardware. Save your mappings as JSON to pick up later, then export the ZIP from the Export tab.</p>
+      <h4>Thank you</h4>
+      <p>Made for everyone who has a controller in a drawer that Live never quite understood. Use it, share it, build something better: if it helps your music, the Patreon and Ko-fi keep the lab's lights on 💚</p>
+      <p class="abtsign">Wabi Sabi · Stanley Gurvich</p>
+      <div class="abtfoot">Uses <a href="https://stuk.github.io/jszip/" target="_blank" rel="noopener noreferrer">JSZip</a> (MIT or GPLv3). Ableton and Live are trademarks of Ableton AG. MIDI runs in your browser through Web MIDI; nothing is uploaded.</div>
+    </div>
+  </div>`;
+  const prev = document.activeElement;
+  const close = () => { dim.classList.add('out'); setTimeout(() => dim.remove(), 180); document.removeEventListener('keydown', onKey, true); if (prev && prev.focus) prev.focus(); };
+  const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+  dim.addEventListener('click', e => { if (e.target === dim) close(); });
+  dim.querySelector('.abtx').addEventListener('click', close);
+  document.addEventListener('keydown', onKey, true);
+  document.body.appendChild(dim);
+  dim.querySelector('.abtx').focus();
+}
 
 // the tabs from the keyboard: Enter or Space opens one
 document.querySelector('.tabs').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.dataset.tab) { e.preventDefault(); switchTab(e.target.dataset.tab); } });
