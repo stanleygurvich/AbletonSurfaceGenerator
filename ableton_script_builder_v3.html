@@ -51,10 +51,11 @@
   /* ── the brand: a turning wireframe moon, its satellite, the name outlined ── */
   .config-brand { display: flex; align-items: center; gap: 10px; padding-right: 2px; }
   .brand-moon { width: 66px; height: 32px; flex-shrink: 0; color: var(--accent); overflow: visible; }
-  .brand-words { display: flex; flex-direction: column; gap: 6px; }
+  .brand-words { display: flex; flex-direction: column; gap: 5px; }
   .brand-title { display: flex; align-items: center; gap: 10px; white-space: nowrap; line-height: 1; }
   .brand-name { color: transparent; -webkit-text-stroke: 1px var(--accent); font: 650 18px/1 var(--sans); letter-spacing: .28em; }
-  .brand-sub { font: 600 8px/1 var(--mono); letter-spacing: .34em; color: var(--violet); white-space: nowrap; text-transform: uppercase; }
+  .brand-sub { display: flex; flex-direction: column; gap: 3px; font: 600 8px/1 var(--mono); letter-spacing: .3em; color: var(--violet); white-space: nowrap; text-transform: uppercase; }
+  .brand-by { color: var(--text2); }
   .brand-sub b { color: var(--violet); font-weight: 600; }
 
   /* ── the top: glass bar over the sky ── */
@@ -244,6 +245,12 @@
   .skin-select { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px; color: var(--text); font: 500 10px var(--mono); outline: none; cursor: pointer; }
   .info-banner { background: color-mix(in srgb, var(--violet) 7%, transparent); border: 1px solid color-mix(in srgb, var(--violet) 22%, transparent); border-radius: 14px; padding: 12px 16px; font-size: 12px; color: var(--text2); line-height: 1.7; margin-bottom: .5rem; text-align: left; }
   .info-banner strong { color: var(--text); }
+  .export-does { max-width: 480px; margin-top: .5rem; width: 100%; }
+  .export-does strong { display: block; margin-bottom: 6px; font: 600 9px/1 var(--mono); letter-spacing: .24em; text-transform: uppercase; color: var(--violet); }
+  .export-does ul { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+  .export-does li { position: relative; padding-left: 16px; }
+  .export-does li::before { content: ''; position: absolute; left: 2px; top: .62em; width: 5px; height: 5px; border-radius: 50%; border: 1.2px solid var(--accent); }
+  .export-none { color: var(--text3); }
   .fix-tag { font: 600 9px var(--mono); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 999px; padding: 2px 7px; color: var(--accent); margin-left: 6px; vertical-align: middle; }
 
   /* ── the credit at the foot ── */
@@ -348,7 +355,7 @@
         <span data-moon="mark"></span>
         <div class="brand-words">
           <div class="brand-title"><span class="brand-name">SURFACE</span></div>
-          <div class="brand-sub">Emerald Moon Labs</div>
+          <div class="brand-sub"><span class="brand-by">Stanley Gurvich</span>Emerald Moon Labs</div>
         </div>
       </div>
       <div class="config-sep"></div>
@@ -924,7 +931,7 @@ function renderQuantize(canvas) {
 
   const desc=document.createElement('div');
   desc.style.cssText='font-size:11px;color:var(--text2);margin-bottom:1rem;line-height:1.7;';
-  desc.innerHTML=`Map a button to <strong style="color:var(--text)">toggle fixed-length recording</strong> on/off, and up to 7 buttons to <strong style="color:var(--text)">select the clip length</strong> — just like Push's Fixed Length row.`;
+  desc.innerHTML=`Map a button to switch <strong>fixed length</strong> on and off, and up to 7 buttons to <strong>pick a length</strong>, like the Fixed Length row on Push.`;
   wrap.appendChild(desc);
 
   const toggleLabel=document.createElement('div');
@@ -954,7 +961,7 @@ function renderQuantize(canvas) {
 
   const hint=document.createElement('div');
   hint.style.cssText='font-size:10px;color:var(--text3);margin-top:1rem;line-height:1.6;';
-  hint.innerHTML=`The generated script uses a <code style="color:var(--accent)">QuantizeComponent</code> that sets <code style="color:var(--text2)">song.clip_trigger_quantization</code> when each button is pressed.`;
+  hint.innerHTML=`A length button sets Live's launch quantization to that length, so clips start and stop on it. Switching fixed length off sets it back to None.`;
   wrap.appendChild(hint);
 
   // ── MIDI Recording Quantization ──
@@ -969,7 +976,7 @@ function renderQuantize(canvas) {
 
   const midiDesc=document.createElement('div');
   midiDesc.style.cssText='font-size:11px;color:var(--text2);margin-bottom:1rem;line-height:1.7;';
-  midiDesc.innerHTML=`Map buttons to set <strong style="color:var(--text)">MIDI input quantization</strong> — quantizes incoming notes as you record them. Sets <code style="color:var(--accent)">song.midi_recording_quantization</code>.`;
+  midiDesc.innerHTML=`Map buttons to set Live's <strong>record quantization</strong>: the notes you record snap to the grid you pick.`;
   wrap.appendChild(midiDesc);
 
   const midiRow=document.createElement('div');midiRow.className='controls-row';
@@ -983,7 +990,7 @@ function renderQuantize(canvas) {
 
   const midiHint=document.createElement('div');
   midiHint.style.cssText='font-size:10px;color:var(--text3);margin-top:1rem;line-height:1.6;';
-  midiHint.innerHTML=`Values: 0=None, 1=1/4, 2=1/8, 3=1/8T, 4=1/8+1/8T, 5=1/16, 6=1/16T, 7=1/16+1/16T, 8=1/32. Pressing a button sets it immediately — no toggle needed.`;
+  midiHint.innerHTML=`Each button sets its grid as soon as you press it. "none" records exactly as played; T means triplets.`;
   wrap.appendChild(midiHint);
 
   canvas.appendChild(wrap);
@@ -994,7 +1001,7 @@ function renderSkin(canvas) {
   canvas.appendChild(header);
 
   const info=document.createElement('div');info.className='info-banner';
-  info.innerHTML='Customize what color each LED state will use. These are compiled into <strong>colors.py</strong> and <strong>skin.py</strong> in the generated script. You can add custom colors beyond the default 5 by editing <strong>colors.py</strong> directly after export.'
+  info.innerHTML='Choose the colour each LED shows for every state: a clip playing, recording or empty, a scene, the transport, and the arm, solo and mute buttons. Your controller lights up in these colours once the script is running (turn on LEDs and pick a MIDI Out).'
     +'<br><br>🟡 <strong>Single-color LEDs (old keyboards, red/green only)?</strong> No problem — your controller ignores the specific color and just reads <strong>0 = off</strong>, <strong>any other value = on</strong>. Just make sure all "off" states are set to <strong>BLACK</strong> and "on" states are anything else. The exact color choice won\'t matter.';
   canvas.appendChild(info);
 
@@ -1059,7 +1066,7 @@ function renderExport(canvas) {
   area.innerHTML=`
     ${moonSVG('full')}
     <div class="export-title">Ready</div>
-    <div class="export-sub"><span class="tagline">Universal Surface Generator</span>Your mappings will be compiled into a Python Remote Script for Ableton Live.<br>Emerald Moon Labs &amp; Stanley Gurvich</div>
+    <div class="export-sub"><span class="tagline">Universal Surface Generator</span>Your mappings will be compiled into a Python Remote Script for Ableton Live.<br>Stanley Gurvich · Emerald Moon Labs</div>
     <div class="export-stats">
       <div class="stat-card"><div class="stat-num">${mapped}</div><div class="stat-label">Mapped</div></div>
       <div class="stat-card"><div class="stat-num">${total-mapped}</div><div class="stat-label">Skipped</div></div>
@@ -1075,18 +1082,41 @@ function renderExport(canvas) {
       Mac: <code>~/Library/Preferences/Ableton/Live x.x.x/User Remote Scripts/</code><br>
       Win: <code>%AppData%/Ableton/Live x.x.x/Preferences/User Remote Scripts/</code>
     </div>
-    <div class="info-banner" style="max-width:480px;margin-top:0.5rem;">
-      <strong>v2 fixes included in generated code:</strong><br>
-      ✓ Select Track buttons wired to Session component<br>
-      ✓ Send B wired to Mixer component<br>
-      ✓ Master Pan wired to Mixer component<br>
-      ✓ Redo button wired to Transport component<br>
-      ✓ Tempo Up/Down wired to Transport component<br>
-      ✓ Scene scroll (nav) wired to Session component<br>
-      ✓ Custom skin colors applied from Skin Colors tab
+    <div class="info-banner export-does">
+      <strong>What your script does</strong>
+      ${scriptSummary()}
     </div>
   `;
   canvas.appendChild(area);
+}
+
+// What the exported script will do, in plain words, from what is mapped (the Export tab's summary)
+function scriptSummary() {
+  const has = t => allControls.some(c => (c.type === t || (Array.isArray(t) && t.includes(c.type))) && STATE.mappings[c.id]);
+  const hasG = g => allControls.some(c => c.group === g && STATE.mappings[c.id]);
+  const list = (names) => names.filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' and $1');
+  const items = [];
+  if (has('clip')) items.push(`Launches clips from your ${STATE.cols}×${STATE.rows} grid`);
+  if (has('scene')) items.push('Launches whole scenes');
+  const trk = list([has('stop') && 'stop', has('arm') && 'arm', has('solo') && 'solo', has('mute') && 'mute', has('select') && 'select']);
+  if (trk) items.push(`Gives each track ${trk} buttons`);
+  if (STATE.holdSelectArm && has('select')) items.push('Arms a track when you hold its Select button');
+  const mix = list([has('volume') && 'volume', has('pan') && 'pan', has('sendA') && 'send A', has('sendB') && 'send B']);
+  if (mix) items.push(`Controls each track's ${mix}`);
+  const mst = list([has('masterVol') && 'master volume', has('masterPan') && 'master pan', has('crossfader') && 'the crossfader']);
+  if (mst) items.push(`Controls ${mst}`);
+  const TN = { play: 'play', stop: 'stop', record: 'record', overdub: 'overdub', undo: 'undo', redo: 'redo', metro: 'metronome', tap_tempo: 'tap tempo',
+    tempo_up: 'tempo up', tempo_dn: 'tempo down', capture: 'capture MIDI', duplicate: 'duplicate', loop: 'loop', punch_in: 'punch in', punch_out: 'punch out',
+    back_to_arr: 'back to arrangement', arr_overdub: 'arrangement overdub' };
+  const tr = list(allControls.filter(c => c.group === 'transport' && STATE.mappings[c.id]).map(c => TN[c.type] || c.label));
+  if (tr) items.push(`Gives you transport buttons: ${tr}`);
+  if (hasG('navigation')) items.push('Scrolls the session grid across your tracks and scenes');
+  if (has('shift')) items.push('Adds a Shift button for second functions');
+  if (has(['quant_toggle', 'quant_size'])) items.push("Sets launch quantization from your fixed length buttons");
+  if (has('midi_quant')) items.push('Sets record quantization from your quantize buttons');
+  if (STATE.ledEnabled) items.push('Lights your controller\'s LEDs in your skin colours');
+  if (!items.length) return '<p class="export-none">Nothing mapped yet: map some controls first, and this lists what your script will do.</p>';
+  return '<ul>' + items.map(i => `<li>${i}</li>`).join('') + '</ul>';
 }
 
 const TOOLTIPS = {
@@ -1761,7 +1791,7 @@ function exportScript() {
 
   const readme=[
     '# '+scriptName+' — Ableton Remote Script',
-    'Generated by Universal Surface Generator — Emerald Moon Labs & Stanley Gurvich',
+    'Generated by Universal Surface Generator — Stanley Gurvich, Emerald Moon Labs',
     '',
     'Script folder name: '+name,
     'Grid: '+cols+' columns x '+rows+' rows',
