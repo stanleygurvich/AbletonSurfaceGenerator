@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Surface Generator v2 — Emerald Moon Labs</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0c0c;
+    --bg2: #101515;
+    --bg3: #181f1f;
+    --bg4: #1f2828;
+    --border: #263030;
+    --border2: #2e3c3c;
+    --text: #e2eaea;
+    --text2: #7a9494;
+    --text3: #4a6060;
+    --accent: #2dd4bf;
+    --accent2: #5eead4;
+    --salmon: #f87060;
+    --salmon2: #fca090;
+    --green: #2dd4bf;
+    --blue: #60c8c8;
+    --yellow: #f0c060;
+    --red: #f87060;
+    --purple: #80b4c8;
+    --cell: 38px;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; min-height: 100vh; }
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  .config-brand { display: flex; flex-direction: column; gap: 1px; justify-content: center; }
+  .brand-title { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: var(--accent); white-space: nowrap; line-height: 1.4; }
+  .brand-sub { font-size: 9px; color: var(--text2); letter-spacing: 0.03em; white-space: nowrap; line-height: 1.4; }
+  .config-panel { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 8px 1rem; flex-shrink: 0; }
+  .config-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+  .config-group { display: flex; flex-direction: column; gap: 4px; }
+  .config-group-sm { min-width: 70px; max-width: 90px; }
+  .config-group-toggle { align-items: center; justify-content: flex-end; padding-bottom: 2px; }
+  .config-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); white-space: nowrap; }
+  .config-input { background: var(--bg3); border: 1px solid var(--border); border-radius: 5px; padding: 5px 8px; color: var(--text); font-family: inherit; font-size: 12px; width: 130px; outline: none; transition: border-color 0.15s; }
+  .config-input:focus { border-color: var(--accent); }
+  .config-select { background: var(--bg3); border: 1px solid var(--border); border-radius: 5px; padding: 5px 6px; color: var(--text); font-family: inherit; font-size: 11px; outline: none; cursor: pointer; width: 100%; }
+  .config-num { display: flex; align-items: center; }
+  .config-num input { background: var(--bg3); border: 1px solid var(--border); border-left: none; border-right: none; padding: 5px 4px; color: var(--text); font-family: inherit; font-size: 12px; width: 36px; outline: none; text-align: center; -moz-appearance: textfield; }
+  .config-num input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .config-num button { background: var(--bg4); border: 1px solid var(--border); padding: 5px 7px; cursor: pointer; color: var(--text2); font-size: 13px; line-height: 1; transition: all 0.1s; }
+  .config-num button:first-child { border-radius: 5px 0 0 5px; }
+  .config-num button:last-child { border-radius: 0 5px 5px 0; }
+  .config-num button:hover { background: var(--border); color: var(--text); }
+  .config-sep { width: 1px; background: var(--border); align-self: stretch; margin: 0 2px; }
+  .config-midi-status { display: flex; flex-direction: column; gap: 3px; }
+  .toggle { position: relative; width: 42px; height: 24px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; inset: 0; background: var(--bg4); border: 1px solid var(--border2); border-radius: 24px; transition: 0.2s; }
+  .slider:before { content: ''; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background: var(--text3); border-radius: 50%; transition: 0.2s; }
+  input:checked + .slider { background: var(--accent); border-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(18px); background: white; }
+  .midi-status { font-size: 11px; padding: 6px 10px; border-radius: 4px; }
+  .midi-ok { background: rgba(45,212,191,0.1); color: var(--green); border: 1px solid rgba(45,212,191,0.2); }
+  .midi-warn { background: rgba(45,212,191,0.08); color: var(--accent); border: 1px solid rgba(45,212,191,0.25); }
+  .midi-err { background: rgba(248,112,96,0.1); color: var(--red); border: 1px solid rgba(248,112,96,0.2); }
+  .topbar-midi { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text2); }
+  .midi-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink:0; }
+  .midi-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .btn-sm { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; color: var(--text); font-family: inherit; font-size: 11px; cursor: pointer; transition: all 0.1s; letter-spacing: 0.05em; }
+  .btn-sm:hover { border-color: var(--border2); background: var(--bg4); }
+  .btn-accent { border-color: var(--accent); color: var(--accent); }
+  .btn-accent:hover { background: rgba(45,212,191,0.08); }
+  .main-app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .tabs { display: flex; gap: 0; padding: 0 1rem; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .tab { padding: 10px 16px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+  .tab:hover { color: var(--text2); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .content { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; gap: 1.5rem; }
+  .canvas-area { flex: 1; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+  .sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1rem; }
+  .sidebar-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  .sidebar-title { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text3); }
+  .sidebar-row { display: flex; justify-content: space-between; align-items: center; }
+  .sidebar-key { font-size: 11px; color: var(--text2); }
+  .sidebar-val { font-size: 11px; color: var(--text); font-weight: 600; }
+  .pill { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; }
+  .pill-note { background: rgba(128,180,200,0.15); color: var(--purple); }
+  .pill-cc { background: rgba(96,200,200,0.15); color: var(--blue); }
+  .pill-bound { background: rgba(45,212,191,0.15); color: var(--green); }
+  .pill-unbound { background: rgba(88,88,88,0.15); color: var(--text3); }
+  .progress-bar { background: var(--bg3); border-radius: 4px; height: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
+  .clear-btn { background: none; border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; color: var(--text3); font-family: inherit; font-size: 11px; cursor: pointer; width: 100%; transition: all 0.1s; }
+  .clear-btn:hover { border-color: var(--red); color: var(--red); }
+  .btn-export-side { background: var(--salmon); border: none; border-radius: 6px; padding: 10px; color: white; font-family: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; width: 100%; }
+  .btn-export-side:hover { background: var(--salmon2); transform: translateY(-1px); }
+  .btn-save-side { background: var(--bg3); border: 1px solid var(--accent); border-radius: 6px; padding: 8px; color: var(--accent); font-family: inherit; font-size: 11px; cursor: pointer; transition: all 0.15s; width: 100%; }
+  .btn-save-side:hover { background: rgba(45,212,191,0.08); }
+  .btn-clear-side { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 8px; color: var(--text3); font-family: inherit; font-size: 11px; cursor: pointer; transition: all 0.15s; width: 100%; }
+  .btn-clear-side:hover { border-color: var(--red); color: var(--red); }
+  .section-header { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text3); margin-bottom: 0.5rem; }
+  .grid-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; }
+  .cell { width: var(--cell); height: var(--cell); border-radius: 4px; border: 1px solid var(--border); background: var(--bg3); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--text3); transition: all 0.1s; position: relative; flex-shrink: 0; user-select: none; }
+  .cell.half { height: calc(var(--cell) * 0.5); border-radius: 3px; font-size: 8px; }
+  .cell:hover { border-color: var(--border2); background: var(--bg4); }
+  .cell.bound { border-color: rgba(45,212,191,0.4); background: rgba(45,212,191,0.08); color: var(--green); }
+  .cell.selected { border-color: var(--accent); background: rgba(45,212,191,0.12); box-shadow: 0 0 0 1px var(--accent); }
+  .cell.listening { border-color: var(--salmon); background: rgba(248,112,96,0.08); animation: blink 0.7s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .cell.scene { background: rgba(128,180,200,0.08); border-color: rgba(128,180,200,0.2); color: rgba(128,180,200,0.6); }
+  .cell.scene.bound { border-color: rgba(128,180,200,0.5); background: rgba(128,180,200,0.15); color: var(--purple); }
+  .cell.stop { background: rgba(248,112,96,0.05); border-color: rgba(248,112,96,0.15); color: rgba(248,112,96,0.4); }
+  .cell.stop.bound { border-color: rgba(248,112,96,0.4); background: rgba(248,112,96,0.1); color: var(--red); }
+  .cell.transport { background: rgba(96,200,200,0.05); border-color: rgba(96,200,200,0.2); color: rgba(96,200,200,0.5); min-width: 52px; }
+  .cell.transport.bound { border-color: rgba(96,200,200,0.5); background: rgba(96,200,200,0.12); color: var(--blue); }
+  .cell.arm { background: rgba(248,112,96,0.05); border-color: rgba(248,112,96,0.12); color: rgba(248,112,96,0.35); }
+  .cell.arm.bound { border-color: rgba(248,112,96,0.35); background: rgba(45,212,191,0.08); color: var(--salmon); }
+  .cell.mute { background: rgba(248,112,96,0.05); border-color: rgba(248,112,96,0.1); color: rgba(248,112,96,0.3); }
+  .cell.mute.bound { border-color: rgba(248,112,96,0.4); background: rgba(248,112,96,0.1); color: var(--red); }
+  .cell.solo { background: rgba(96,200,200,0.05); border-color: rgba(96,200,200,0.1); color: rgba(96,200,200,0.3); }
+  .cell.solo.bound { border-color: rgba(96,200,200,0.4); background: rgba(96,200,200,0.1); color: var(--blue); }
+  .cell.select-track { background: rgba(45,212,191,0.05); border-color: rgba(45,212,191,0.1); color: rgba(74,222,128,0.3); }
+  .cell.select-track.bound { border-color: rgba(45,212,191,0.4); background: rgba(45,212,191,0.1); color: var(--green); }
+  .cell.knob { border-radius: 50%; }
+  .cell.nav { background: rgba(128,180,200,0.05); border-color: rgba(128,180,200,0.1); color: rgba(128,180,200,0.3); }
+  .cell.nav.bound { border-color: rgba(128,180,200,0.4); background: rgba(128,180,200,0.1); color: var(--purple); }
+  .track-row { display: flex; gap: 4px; }
+  .track-label { width: var(--cell); font-size: 9px; color: var(--text3); text-align: center; padding: 2px 0; flex-shrink: 0; }
+  .controls-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .listening-banner { background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.25); border-radius: 8px; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  .listening-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 0.7s infinite; flex-shrink: 0; }
+  .listening-text { font-size: 12px; color: var(--accent); }
+  .listening-ctrl { font-weight: 700; }
+  .skip-btn { margin-left: auto; background: none; border: 1px solid rgba(45,212,191,0.25); border-radius: 4px; padding: 4px 12px; color: var(--accent); font-family: inherit; font-size: 11px; cursor: pointer; flex-shrink: 0; }
+  .skip-btn:hover { background: rgba(45,212,191,0.08); }
+  .stop-btn { margin-left: 6px; background: none; border: 1px solid rgba(248,112,96,0.3); border-radius: 4px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; color: var(--red); font-size: 13px; cursor: pointer; flex-shrink: 0; line-height: 1; }
+  .stop-btn:hover { background: rgba(248,112,96,0.15); border-color: var(--red); }
+  .hidden { display: none !important; }
+  select option { background: #1a1a1a; }
+  .quant-grid { display: flex; gap: 6px; flex-wrap: wrap; }
+  .quant-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; color: var(--text2); font-family: inherit; font-size: 11px; cursor: pointer; transition: all 0.1s; }
+  .quant-btn.active { background: rgba(45,212,191,0.12); border-color: var(--accent); color: var(--accent); }
+  .export-area { display: flex; flex-direction: column; gap: 1rem; align-items: center; padding: 3rem 2rem; }
+  .export-title { font-size: 20px; font-weight: 700; }
+  .export-sub { color: var(--text2); font-size: 13px; text-align: center; max-width: 400px; line-height: 1.6; }
+  .export-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; width: 100%; max-width: 400px; }
+  .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+  .stat-num { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+  .btn-export { background: var(--salmon); border: none; border-radius: 8px; padding: 14px 3rem; color: white; font-family: inherit; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; cursor: pointer; transition: all 0.15s; }
+  .btn-export:hover { background: var(--salmon2); transform: translateY(-1px); }
+  .col-header { height: 20px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--text3); letter-spacing: 0.05em; }
+  /* Skin editor */
+  .skin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .skin-entry { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .skin-name { font-size: 11px; color: var(--text2); flex: 1; }
+  .skin-color-row { display: flex; align-items: center; gap: 6px; }
+  .skin-swatch { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border2); flex-shrink: 0; }
+  .skin-select { background: var(--bg4); border: 1px solid var(--border); border-radius: 4px; padding: 3px 6px; color: var(--text); font-family: inherit; font-size: 10px; outline: none; cursor: pointer; }
+  .info-banner { background: rgba(128,180,200,0.07); border: 1px solid rgba(128,180,200,0.2); border-radius: 8px; padding: 10px 14px; font-size: 11px; color: var(--text2); line-height: 1.7; margin-bottom: 0.5rem; }
+  .info-banner strong { color: var(--text); }
+  /* v2 badge */
+  .v2-badge { background: rgba(248,112,96,0.15); border: 1px solid rgba(248,112,96,0.3); border-radius: 4px; padding: 2px 6px; font-size: 9px; font-weight: 700; color: var(--salmon); letter-spacing: 0.08em; }
+  /* fixes badge */
+  .fix-tag { font-size: 9px; background: rgba(45,212,191,0.1); border: 1px solid rgba(45,212,191,0.2); border-radius: 3px; padding: 1px 5px; color: var(--accent); margin-left: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<div class="main-app" id="mainApp">
+
+  <div class="config-panel">
+    <div class="config-row">
+      <div class="config-brand">
+        <div class="brand-title">Universal Surface Generator <span class="v2-badge">v2</span></div>
+        <div class="brand-sub">Emerald Moon Labs &amp; Stanley Gurvich</div>
+
+      </div>
+      <div class="config-sep"></div>
+      <div class="config-group">
+        <div class="config-label">Controller Name</div>
+        <input class="config-input" id="scriptName" type="text" placeholder="My Controller" maxlength="48" oninput="updateNames()" />
+      </div>
+      <div class="config-sep"></div>
+      <div class="config-group">
+        <div class="config-label">MIDI In</div>
+        <select class="config-select" id="midiInSelect" onchange="onMidiInChange()"><option value="">-- none --</option></select>
+      </div>
+      <div class="config-group">
+        <div class="config-label">MIDI Out <span style="color:var(--text3)">(LEDs)</span></div>
+        <select class="config-select" id="midiOutSelect" onchange="onMidiOutChange()"><option value="">-- none --</option></select>
+      </div>
+      <div class="config-sep"></div>
+      <div class="config-group config-group-sm">
+        <div class="config-label">Cols</div>
+        <div class="config-num">
+          <button onclick="adjGrid('cols',-1)">-</button>
+          <input type="number" id="gridCols" value="8" min="1" max="16" oninput="onGridChange()" />
+          <button onclick="adjGrid('cols',1)">+</button>
+        </div>
+      </div>
+      <div class="config-group config-group-sm">
+        <div class="config-label">Rows</div>
+        <div class="config-num">
+          <button onclick="adjGrid('rows',-1)">-</button>
+          <input type="number" id="gridRows" value="8" min="1" max="16" oninput="onGridChange()" />
+          <button onclick="adjGrid('rows',1)">+</button>
+        </div>
+      </div>
+      <div class="config-sep"></div>
+      <div class="config-group config-group-toggle">
+        <div class="config-label">LEDs</div>
+        <label class="toggle"><input type="checkbox" id="ledToggle" onchange="onLedChange()"><span class="slider"></span></label>
+      </div>
+      <div class="config-sep"></div>
+      <div class="config-group config-group-toggle">
+        <div class="config-label" style="white-space:nowrap;">HOLD SELECT → ARM</div>
+        <label class="toggle"><input type="checkbox" id="holdSelectArmToggle" onchange="STATE.holdSelectArm=this.checked"><span class="slider"></span></label>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-left:auto;">
+        <button class="btn-sm" onclick="saveStateJSON()" title="Export mappings as JSON">💾 Save</button>
+        <label class="btn-sm" style="cursor:pointer;" title="Import saved mappings JSON">📂 Load<input type="file" accept=".json" style="display:none" onchange="loadStateJSON(this)"></label>
+        <div class="config-midi-status">
+          <div class="topbar-midi">
+            <div class="midi-dot" id="midiDot"></div>
+            <span id="midiDevName">No MIDI</span>
+          </div>
+          <div class="midi-status midi-warn" id="midiStatus">...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('session')" data-tab="session">Session Grid</div>
+    <div class="tab" onclick="switchTab('mixer')" data-tab="mixer">Mixer</div>
+    <div class="tab" onclick="switchTab('transport')" data-tab="transport">Transport</div>
+    <div class="tab" onclick="switchTab('navigation')" data-tab="navigation">Navigation</div>
+    <div class="tab" onclick="switchTab('quantize')" data-tab="quantize">Fixed Length</div>
+    <div class="tab" onclick="switchTab('skin')" data-tab="skin">🎨 Skin Colors</div>
+    <div class="tab" onclick="switchTab('export')" data-tab="export">Export</div>
+  </div>
+
+  <div class="content" id="mainContent">
+    <div class="canvas-area" id="canvasArea"></div>
+    <div class="sidebar">
+      <div class="sidebar-card" id="selectedCard">
+        <div class="sidebar-title">Selected Control</div>
+        <div id="selectedInfo" style="color:var(--text3);font-size:11px;">Click any control to select it</div>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-title">Mapping Progress</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-top:4px;">
+          <span id="progressText">0 / 0 mapped</span>
+          <span id="progressPct">0%</span>
+        </div>
+      </div>
+      <button class="btn-export-side" onclick="switchTab('export')">Export Script</button>
+      <button class="btn-save-side" onclick="saveStateJSON()">Save Mappings JSON</button>
+      <button class="btn-clear-side" onclick="clearAll()">Clear All Mappings</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const QUANT_SIZES = ['1/8','1/4','1/2','1bar','2bar','4bar','8bar'];
+const MIDI_QUANT_SIZES = ['none','1/4','1/8','1/8T','1/8+1/8T','1/16','1/16T','1/16+1/16T','1/32'];
+
+// Default skin color definitions
+const DEFAULT_SKIN = {
+  'ClipSlot.HasContent': 'GREEN',
+  'ClipSlot.Recording': 'RED',
+  'ClipSlot.Playing': 'GREEN',
+  'ClipSlot.Empty': 'BLACK',
+  'ClipSlot.Triggered': 'YELLOW',
+  'Scene.Active': 'YELLOW',
+  'Scene.Inactive': 'BLACK',
+  'Scene.Triggered': 'GREEN',
+  'Transport.PlayOn': 'GREEN',
+  'Transport.PlayOff': 'BLACK',
+  'Transport.RecordOn': 'RED',
+  'Transport.RecordOff': 'BLACK',
+  'Mixer.ArmOn': 'RED',
+  'Mixer.ArmOff': 'BLACK',
+  'Mixer.SoloOn': 'BLUE',
+  'Mixer.SoloOff': 'BLACK',
+  'Mixer.MuteOn': 'YELLOW',
+  'Mixer.MuteOff': 'BLACK',
+};
+
+const COLOR_OPTIONS = ['BLACK','GREEN','RED','YELLOW','BLUE','WHITE','CYAN','PURPLE','ORANGE','PINK'];
+const COLOR_HEX = {
+  BLACK:'#111111', GREEN:'#2dd4bf', RED:'#f87060', YELLOW:'#f0c060',
+  BLUE:'#60c8c8', WHITE:'#e2eaea', CYAN:'#40e0d0', PURPLE:'#a080c0',
+  ORANGE:'#f09060', PINK:'#f080a0'
+};
+
+const STATE = {
+  name: 'MyController',
+  cols: 8,
+  rows: 8,
+  ledEnabled: false,
+  midiIn: null,
+  midiOut: null,
+  midiAccess: null,
+  midiInId: '',
+  midiOutId: '',
+  mappings: {},
+  skin: Object.assign({}, DEFAULT_SKIN),
+  listening: null,
+  selectedId: null,
+  currentTab: 'session',
+  scriptName: 'My Controller',
+  holdSelectArm: false,
+};
+
+let allControls = [];
+
+// ── Save / Load JSON ──
+function saveStateJSON() {
+  const data = {
+    version: 2,
+    scriptName: STATE.scriptName,
+    cols: STATE.cols,
+    rows: STATE.rows,
+    ledEnabled: STATE.ledEnabled,
+    holdSelectArm: STATE.holdSelectArm,
+    mappings: STATE.mappings,
+    skin: STATE.skin,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = (STATE.name||'controller') + '_mappings.json';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function loadStateJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.scriptName) {
+        STATE.scriptName = data.scriptName;
+        document.getElementById('scriptName').value = data.scriptName;
+        updateNames();
+      }
+      if (data.cols) { STATE.cols = data.cols; document.getElementById('gridCols').value = data.cols; }
+      if (data.rows) { STATE.rows = data.rows; document.getElementById('gridRows').value = data.rows; }
+      if (data.ledEnabled !== undefined) {
+        STATE.ledEnabled = data.ledEnabled;
+        document.getElementById('ledToggle').checked = data.ledEnabled;
+      }
+      if (data.holdSelectArm !== undefined) {
+        STATE.holdSelectArm = data.holdSelectArm;
+        document.getElementById('holdSelectArmToggle').checked = data.holdSelectArm;
+      }
+      if (data.mappings) STATE.mappings = data.mappings;
+      if (data.skin) STATE.skin = Object.assign({}, DEFAULT_SKIN, data.skin);
+      buildAllControls();
+      renderTab(STATE.currentTab);
+    } catch(err) {
+      alert('Could not load JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function updateMidiDevices() {
+  const inSel = document.getElementById('midiInSelect');
+  const outSel = document.getElementById('midiOutSelect');
+  const prevIn = inSel.value;
+  const prevOut = outSel.value;
+  inSel.innerHTML = '<option value="">-- none --</option>';
+  outSel.innerHTML = '<option value="">-- none --</option>';
+  if (!STATE.midiAccess) return;
+  STATE.midiAccess.inputs.forEach((port, id) => {
+    const opt = document.createElement('option');
+    opt.value = id; opt.textContent = port.name;
+    if (id === prevIn) opt.selected = true;
+    inSel.appendChild(opt);
+  });
+  STATE.midiAccess.outputs.forEach((port, id) => {
+    const opt = document.createElement('option');
+    opt.value = id; opt.textContent = port.name;
+    if (id === prevOut) opt.selected = true;
+    outSel.appendChild(opt);
+  });
+}
+
+function updateNames() {
+  STATE.scriptName = document.getElementById('scriptName').value.trim() || 'My Controller';
+  STATE.name = STATE.scriptName
+    .split(/[\s\-_]+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join('')
+    .replace(/[^a-zA-Z0-9]/g, '') || 'MyController';
+}
+
+function onMidiInChange() {
+  STATE.midiInId = document.getElementById('midiInSelect').value;
+  if (STATE.midiIn) { STATE.midiIn.onmidimessage = null; STATE.midiIn = null; }
+  if (STATE.midiAccess && STATE.midiInId) {
+    STATE.midiIn = STATE.midiAccess.inputs.get(STATE.midiInId);
+    if (STATE.midiIn) {
+      STATE.midiIn.onmidimessage = onMidiMessage;
+      document.getElementById('midiDot').className = 'midi-dot active';
+      document.getElementById('midiDevName').textContent = STATE.midiIn.name;
+    }
+  } else {
+    document.getElementById('midiDot').className = 'midi-dot';
+    document.getElementById('midiDevName').textContent = 'No MIDI';
+  }
+}
+
+function onMidiOutChange() {
+  STATE.midiOutId = document.getElementById('midiOutSelect').value;
+  STATE.midiOut = (STATE.midiAccess && STATE.midiOutId) ? STATE.midiAccess.outputs.get(STATE.midiOutId) : null;
+}
+
+function onLedChange() {
+  STATE.ledEnabled = document.getElementById('ledToggle').checked;
+}
+
+function adjGrid(which, delta) {
+  const id = which === 'cols' ? 'gridCols' : 'gridRows';
+  const el = document.getElementById(id);
+  let v = parseInt(el.value) + delta;
+  v = Math.max(1, Math.min(16, v));
+  el.value = v;
+  onGridChange();
+}
+
+function onGridChange() {
+  const newCols = parseInt(document.getElementById('gridCols').value) || 8;
+  const newRows = parseInt(document.getElementById('gridRows').value) || 8;
+  if (newCols === STATE.cols && newRows === STATE.rows) return;
+  Object.keys(STATE.mappings).forEach(id => {
+    const m = id.match(/^clip_(\d+)_(\d+)$/);
+    if (m && (parseInt(m[1]) >= newRows || parseInt(m[2]) >= newCols)) delete STATE.mappings[id];
+    const sc = id.match(/^scene_(\d+)$/);
+    if (sc && parseInt(sc[1]) >= newRows) delete STATE.mappings[id];
+    const st = id.match(/^(stop|arm|solo|mute|sel|vol|pan|senda|sendb)_(\d+)$/);
+    if (st && parseInt(st[2]) >= newCols) delete STATE.mappings[id];
+  });
+  STATE.cols = newCols;
+  STATE.rows = newRows;
+  buildAllControls();
+  renderTab(STATE.currentTab);
+}
+
+function buildAllControls() {
+  allControls = [];
+  const cols = STATE.cols, rows = STATE.rows;
+  for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) allControls.push({id:`clip_${r}_${c}`,label:'',group:'session',type:'clip',row:r,col:c});
+  for (let r=0;r<rows;r++) allControls.push({id:`scene_${r}`,label:`S${r+1}`,group:'session',type:'scene',row:r});
+  for (let c=0;c<cols;c++) allControls.push({id:`stop_${c}`,label:`■`,group:'session',type:'stop',col:c});
+  for (let c=0;c<cols;c++) allControls.push({id:`arm_${c}`,label:`ARM`,group:'track',type:'arm',col:c});
+  for (let c=0;c<cols;c++) allControls.push({id:`solo_${c}`,label:`SLO`,group:'track',type:'solo',col:c});
+  for (let c=0;c<cols;c++) allControls.push({id:`mute_${c}`,label:`MUT`,group:'track',type:'mute',col:c});
+  for (let c=0;c<cols;c++) allControls.push({id:`sel_${c}`,label:`SEL`,group:'track',type:'select',col:c});
+  for (let c=0;c<cols;c++) allControls.push({id:`vol_${c}`,label:`VOL`,group:'mixer',type:'volume',col:c});
+  for (let c=0;c<cols;c++) allControls.push({id:`pan_${c}`,label:`PAN`,group:'mixer',type:'pan',col:c});
+  for (let c=0;c<cols;c++) allControls.push({id:`senda_${c}`,label:`SA`,group:'mixer',type:'sendA',col:c});
+  for (let c=0;c<cols;c++) allControls.push({id:`sendb_${c}`,label:`SB`,group:'mixer',type:'sendB',col:c});
+  allControls.push({id:'master_vol',label:'MVOL',group:'mixer',type:'masterVol'});
+  allControls.push({id:'master_pan',label:'MPAN',group:'mixer',type:'masterPan'});
+  allControls.push({id:'crossfader',label:'XFDR',group:'mixer',type:'crossfader'});
+  ['play','stop','record','overdub','undo','redo','metro','tap_tempo','tempo_up','tempo_dn','capture','duplicate','loop','punch_in','punch_out','back_to_arr','arr_overdub'].forEach(t=>{
+    allControls.push({id:`transport_${t}`,label:t.replace('_',' ').toUpperCase(),group:'transport',type:t});
+  });
+  ['nav_up','nav_dn','nav_left','nav_right','scene_up','scene_dn'].forEach(t=>{
+    allControls.push({id:`nav_${t}`,label:t.replace('_',' ').toUpperCase(),group:'navigation',type:t});
+  });
+  allControls.push({id:'shift',label:'SHIFT',group:'navigation',type:'shift'});
+  allControls.push({id:'quant_toggle',label:'FIXED LEN',group:'quantize',type:'quant_toggle'});
+  QUANT_SIZES.forEach(q=>{
+    allControls.push({id:`quant_size_${q.replace('/','_')}`,label:q,group:'quantize',type:'quant_size',size:q});
+  });
+  MIDI_QUANT_SIZES.forEach(q=>{
+    allControls.push({id:`midi_quant_${q.replace('/','_')}`,label:q,group:'quantize',type:'midi_quant',size:q});
+  });
+  updateProgress();
+}
+
+async function initMidi() {
+  try {
+    const access = await navigator.requestMIDIAccess({ sysex: false });
+    STATE.midiAccess = access;
+    updateMidiDevices();
+    access.onstatechange = updateMidiDevices;
+    document.getElementById('midiStatus').className = 'midi-status midi-ok';
+    document.getElementById('midiStatus').textContent = 'MIDI ready';
+  } catch(e) {
+    document.getElementById('midiStatus').className = 'midi-status midi-err';
+    document.getElementById('midiStatus').textContent = 'MIDI denied';
+  }
+}
+
+function switchTab(tab) {
+  STATE.currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  renderTab(tab);
+}
+
+function renderTab(tab) {
+  const canvas = document.getElementById('canvasArea');
+  canvas.innerHTML = '';
+  if (tab === 'session') renderSession(canvas);
+  else if (tab === 'mixer') renderMixer(canvas);
+  else if (tab === 'transport') renderTransport(canvas);
+  else if (tab === 'navigation') renderNavigation(canvas);
+  else if (tab === 'quantize') renderQuantize(canvas);
+  else if (tab === 'skin') renderSkin(canvas);
+  else if (tab === 'export') renderExport(canvas);
+}
+
+function renderListeningBanner(canvas) {
+  if (!STATE.listening) return;
+  const ctrl = allControls.find(c=>c.id===STATE.listening);
+  const banner = document.createElement('div');
+  banner.className = 'listening-banner';
+  banner.id = 'listeningBanner';
+  banner.innerHTML = `<div class="listening-dot"></div><div class="listening-text">Listening for MIDI — wiggle a control to map <span class="listening-ctrl">${ctrl ? getControlLabel(ctrl) : STATE.listening}</span></div><button class="skip-btn" onclick="skipListening()">Skip →</button><button class="stop-btn" onclick="stopListening()" title="Stop MIDI learn">✕</button>`;
+  canvas.appendChild(banner);
+}
+
+function stopListening() {
+  STATE.listening = null;
+  renderTab(STATE.currentTab);
+  updateSelectedCard(STATE.selectedId||'');
+}
+
+function getControlLabel(ctrl) {
+  if (ctrl.type==='clip') return `Clip [${ctrl.row+1},${ctrl.col+1}]`;
+  if (ctrl.type==='scene') return `Scene ${ctrl.row+1} Launch`;
+  if (ctrl.type==='stop') return `Track ${ctrl.col+1} Stop`;
+  if (ctrl.type==='arm') return `Track ${ctrl.col+1} Arm`;
+  if (ctrl.type==='solo') return `Track ${ctrl.col+1} Solo`;
+  if (ctrl.type==='mute') return `Track ${ctrl.col+1} Mute`;
+  if (ctrl.type==='select') return `Track ${ctrl.col+1} Select`;
+  if (ctrl.type==='volume') return `Track ${ctrl.col+1} Volume`;
+  if (ctrl.type==='pan') return `Track ${ctrl.col+1} Pan`;
+  if (ctrl.type==='sendA') return `Track ${ctrl.col+1} Send A`;
+  if (ctrl.type==='sendB') return `Track ${ctrl.col+1} Send B`;
+  if (ctrl.type==='quant_toggle') return 'Fixed Length Toggle';
+  if (ctrl.type==='quant_size') return `Clip Length: ${ctrl.size}`;
+  return ctrl.label || ctrl.id;
+}
+
+function renderSession(canvas) {
+  renderListeningBanner(canvas);
+  const header = document.createElement('div');
+  header.className = 'section-header';
+  header.textContent = `Session View — ${STATE.cols}×${STATE.rows}`;
+  canvas.appendChild(header);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'grid-wrap';
+  const layout = document.createElement('div');
+  layout.style.display = 'flex';
+  layout.style.gap = '4px';
+  layout.style.flexDirection = 'column';
+
+  const selRow=document.createElement('div');
+  selRow.style.cssText='display:flex;gap:4px;align-items:center;margin-bottom:2px;';
+  const selSpacer=document.createElement('div');selSpacer.style.cssText='width:38px;';selRow.appendChild(selSpacer);
+  for(let c=0;c<STATE.cols;c++){
+    const id='sel_'+c;
+    const cell=makeCell(id,'select-track',STATE.mappings[id]?`${STATE.mappings[id].type===0?'N':'CC'}${STATE.mappings[id].number}`:'SEL');
+    cell.classList.add('half');
+    selRow.appendChild(cell);
+  }
+  const selSceneSpacer=document.createElement('div');selSceneSpacer.style.cssText='width:42px;';selRow.appendChild(selSceneSpacer);
+  layout.appendChild(selRow);
+
+  const colHeaders = document.createElement('div');
+  colHeaders.style.cssText = 'display:flex;gap:4px;margin-bottom:2px;';
+  const chSpacer=document.createElement('div');chSpacer.style.cssText='width:38px;';colHeaders.appendChild(chSpacer);
+  for(let c=0;c<STATE.cols;c++){
+    const h = document.createElement('div');
+    h.className='col-header';h.style.width='38px';
+    h.textContent=`T${c+1}`;colHeaders.appendChild(h);
+  }
+  const sceneSpacer = document.createElement('div');sceneSpacer.className='col-header';sceneSpacer.style.width='42px';sceneSpacer.textContent='SCN';
+  colHeaders.appendChild(sceneSpacer);
+  layout.appendChild(colHeaders);
+
+  for(let r=0;r<STATE.rows;r++){
+    const row = document.createElement('div');
+    row.style.cssText='display:flex;gap:4px;';
+    const rowSpacer=document.createElement('div');rowSpacer.style.cssText='width:38px;';row.appendChild(rowSpacer);
+    for(let c=0;c<STATE.cols;c++){
+      const id=`clip_${r}_${c}`;
+      row.appendChild(makeCell(id,'clip',STATE.mappings[id]?`${STATE.mappings[id].type===0?'N':'CC'}${STATE.mappings[id].number}`:''));
+    }
+    const sid=`scene_${r}`;
+    row.appendChild(makeCell(sid,'scene','►'));
+    layout.appendChild(row);
+  }
+
+  const stopRow = document.createElement('div');
+  stopRow.style.cssText='display:flex;gap:4px;margin-top:4px;';
+  const stopSpacer=document.createElement('div');stopSpacer.style.cssText='width:38px;';stopRow.appendChild(stopSpacer);
+  for(let c=0;c<STATE.cols;c++){
+    const id=`stop_${c}`;
+    stopRow.appendChild(makeCell(id,'stop','■'));
+  }
+  layout.appendChild(stopRow);
+
+  const trackRows = [
+    {label:'ARM',  prefix:'arm_', cls:'arm'},
+    {label:'SOLO', prefix:'solo_',cls:'solo'},
+    {label:'MUTE', prefix:'mute_',cls:'mute'},
+  ];
+  trackRows.forEach(function({label,prefix,cls}){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:4px;align-items:center;margin-top:2px;';
+    const lspacer=document.createElement('div');lspacer.style.cssText='width:38px;';row.appendChild(lspacer);
+    for(let c=0;c<STATE.cols;c++){
+      const id=prefix+c;
+      const cell=makeCell(id,cls,STATE.mappings[id]?`${STATE.mappings[id].type===0?'N':'CC'}${STATE.mappings[id].number}`:label);
+      cell.classList.add('half');
+      row.appendChild(cell);
+    }
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:9px;color:var(--text3);padding-left:8px;';
+    lbl.textContent=label;row.appendChild(lbl);
+    layout.appendChild(row);
+  });
+
+  wrap.appendChild(layout);
+  canvas.appendChild(wrap);
+}
+
+function renderMixer(canvas) {
+  renderListeningBanner(canvas);
+  const header = document.createElement('div');header.className='section-header';header.textContent='Mixer';
+  canvas.appendChild(header);
+
+  const wrap=document.createElement('div');wrap.className='grid-wrap';
+
+  const colH=document.createElement('div');colH.style.cssText='display:flex;gap:4px;margin-bottom:4px;';
+  const lbl=document.createElement('div');lbl.style.cssText='width:52px;';colH.appendChild(lbl);
+  for(let c=0;c<STATE.cols;c++){const h=document.createElement('div');h.className='col-header';h.style.width='38px';h.textContent=`T${c+1}`;colH.appendChild(h);}
+  wrap.appendChild(colH);
+
+  const rows=[
+    {label:'VOL',prefix:'vol_',cls:''},
+    {label:'PAN',prefix:'pan_',cls:'knob'},
+    {label:'SEND A',prefix:'senda_',cls:'knob'},
+    {label:'SEND B',prefix:'sendb_',cls:'knob'},
+  ];
+
+  rows.forEach(({label,prefix,cls})=>{
+    const row=document.createElement('div');row.style.cssText='display:flex;gap:4px;align-items:center;margin-bottom:4px;';
+    const l=document.createElement('div');l.style.cssText='width:52px;font-size:9px;color:var(--text3);text-align:right;padding-right:8px;';l.textContent=label;row.appendChild(l);
+    for(let c=0;c<STATE.cols;c++){
+      const id=`${prefix}${c}`;
+      row.appendChild(makeCell(id,cls,STATE.mappings[id]?`CC${STATE.mappings[id].number}`:label));
+    }
+    wrap.appendChild(row);
+  });
+
+  const masterRow=document.createElement('div');masterRow.style.cssText='display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap;';
+  [['master_vol','MASTER VOL',''],['master_pan','MASTER PAN','knob'],['crossfader','CROSSFADER','']].forEach(([id,lbl,cls])=>{
+    const c=makeCell(id,cls,STATE.mappings[id]?`CC${STATE.mappings[id].number}`:lbl);
+    c.style.width='80px';c.style.fontSize='9px';masterRow.appendChild(c);
+  });
+  wrap.appendChild(masterRow);
+  canvas.appendChild(wrap);
+}
+
+function renderTransport(canvas) {
+  renderListeningBanner(canvas);
+  const header=document.createElement('div');header.className='section-header';header.textContent='Transport';
+  canvas.appendChild(header);
+
+  const wrap=document.createElement('div');wrap.className='grid-wrap';
+
+  const items=[
+    {id:'transport_play',label:'▶ PLAY'},
+    {id:'transport_stop',label:'■ STOP'},
+    {id:'transport_record',label:'● REC'},
+    {id:'transport_overdub',label:'⊕ OVDUB'},
+    {id:'transport_undo',label:'↩ UNDO'},
+    {id:'transport_redo',label:'↪ REDO'},
+    {id:'transport_metro',label:'♩ METRO'},
+    {id:'transport_tap_tempo',label:'TAP'},
+    {id:'transport_tempo_up',label:'BPM+'},
+    {id:'transport_tempo_dn',label:'BPM-'},
+    {id:'transport_capture',label:'⊙ CAPTURE'},
+    {id:'transport_duplicate',label:'⧉ DUPL'},
+    {id:'transport_loop',label:'⟳ LOOP'},
+    {id:'transport_punch_in',label:'[ PUNCH IN'},
+    {id:'transport_punch_out',label:'PUNCH OUT ]'},
+    {id:'transport_back_to_arr',label:'↵ BACK'},
+    {id:'transport_arr_overdub',label:'⊕ ARR OVD'},
+  ];
+
+  const row=document.createElement('div');row.className='controls-row';
+  items.forEach(({id,label})=>{
+    const c=makeCell(id,'transport',STATE.mappings[id]?`${STATE.mappings[id].type===0?'N':'CC'}${STATE.mappings[id].number}`:label);
+    c.style.minWidth='60px';c.style.width='auto';c.style.padding='0 10px';c.style.height='44px';
+    row.appendChild(c);
+  });
+  wrap.appendChild(row);
+  canvas.appendChild(wrap);
+}
+
+function renderNavigation(canvas) {
+  renderListeningBanner(canvas);
+  const header=document.createElement('div');header.className='section-header';header.textContent='Navigation & Global';
+  canvas.appendChild(header);
+
+  const wrap=document.createElement('div');wrap.className='grid-wrap';
+
+  const navItems=[
+    {id:'nav_nav_up',label:'↑ UP'},{id:'nav_nav_dn',label:'↓ DOWN'},
+    {id:'nav_nav_left',label:'← LEFT'},{id:'nav_nav_right',label:'→ RIGHT'},
+    {id:'nav_scene_up',label:'⇑ SCENE↑'},{id:'nav_scene_dn',label:'⇓ SCENE↓'},
+    {id:'shift',label:'⇧ SHIFT'},
+  ];
+
+  const row=document.createElement('div');row.className='controls-row';
+  navItems.forEach(({id,label})=>{
+    const c=makeCell(id,'nav',STATE.mappings[id]?`${STATE.mappings[id].type===0?'N':'CC'}${STATE.mappings[id].number}`:label);
+    c.style.minWidth='70px';c.style.width='auto';c.style.padding='0 12px';c.style.height='44px';
+    row.appendChild(c);
+  });
+  wrap.appendChild(row);
+  canvas.appendChild(wrap);
+}
+
+function renderQuantize(canvas) {
+  renderListeningBanner(canvas);
+  const header=document.createElement('div');
+  header.className='section-header';
+  header.textContent='Quantize / Fixed Length';
+  canvas.appendChild(header);
+
+  const wrap=document.createElement('div');wrap.className='grid-wrap';
+
+  const desc=document.createElement('div');
+  desc.style.cssText='font-size:11px;color:var(--text2);margin-bottom:1rem;line-height:1.7;';
+  desc.innerHTML=`Map a button to <strong style="color:var(--text)">toggle fixed-length recording</strong> on/off, and up to 7 buttons to <strong style="color:var(--text)">select the clip length</strong> — just like Push's Fixed Length row.`;
+  wrap.appendChild(desc);
+
+  const toggleLabel=document.createElement('div');
+  toggleLabel.style.cssText='font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;';
+  toggleLabel.textContent='Fixed Length Toggle';
+  wrap.appendChild(toggleLabel);
+
+  const toggleRow=document.createElement('div');toggleRow.className='controls-row';toggleRow.style.marginBottom='1.5rem';
+  const toggleCell=makeCell('quant_toggle','transport',STATE.mappings['quant_toggle']?`${STATE.mappings['quant_toggle'].type===0?'N':'CC'}${STATE.mappings['quant_toggle'].number}`:'FIXED LEN');
+  toggleCell.style.cssText+='min-width:100px;width:auto;padding:0 14px;height:44px;font-size:10px;';
+  toggleRow.appendChild(toggleCell);
+  wrap.appendChild(toggleRow);
+
+  const sizeLabel=document.createElement('div');
+  sizeLabel.style.cssText='font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;';
+  sizeLabel.textContent='Clip Length Size Buttons';
+  wrap.appendChild(sizeLabel);
+
+  const sizeRow=document.createElement('div');sizeRow.className='controls-row';
+  QUANT_SIZES.forEach(q=>{
+    const id=`quant_size_${q.replace('/','_')}`;
+    const c=makeCell(id,'transport',STATE.mappings[id]?`${STATE.mappings[id].type===0?'N':'CC'}${STATE.mappings[id].number}`:q);
+    c.style.cssText+='min-width:56px;width:auto;padding:0 10px;height:44px;font-size:10px;';
+    sizeRow.appendChild(c);
+  });
+  wrap.appendChild(sizeRow);
+
+  const hint=document.createElement('div');
+  hint.style.cssText='font-size:10px;color:var(--text3);margin-top:1rem;line-height:1.6;';
+  hint.innerHTML=`The generated script uses a <code style="color:var(--accent)">QuantizeComponent</code> that sets <code style="color:var(--text2)">song.clip_trigger_quantization</code> when each button is pressed.`;
+  wrap.appendChild(hint);
+
+  // ── MIDI Recording Quantization ──
+  const divider=document.createElement('div');
+  divider.style.cssText='border-top:1px solid var(--border);margin:1.5rem 0 1rem;';
+  wrap.appendChild(divider);
+
+  const midiLabel=document.createElement('div');
+  midiLabel.style.cssText='font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;';
+  midiLabel.textContent='MIDI Recording Quantization';
+  wrap.appendChild(midiLabel);
+
+  const midiDesc=document.createElement('div');
+  midiDesc.style.cssText='font-size:11px;color:var(--text2);margin-bottom:1rem;line-height:1.7;';
+  midiDesc.innerHTML=`Map buttons to set <strong style="color:var(--text)">MIDI input quantization</strong> — quantizes incoming notes as you record them. Sets <code style="color:var(--accent)">song.midi_recording_quantization</code>.`;
+  wrap.appendChild(midiDesc);
+
+  const midiRow=document.createElement('div');midiRow.className='controls-row';
+  MIDI_QUANT_SIZES.forEach(q=>{
+    const id=`midi_quant_${q.replace('/','_')}`;
+    const c=makeCell(id,'transport',STATE.mappings[id]?`${STATE.mappings[id].type===0?'N':'CC'}${STATE.mappings[id].number}`:q);
+    c.style.cssText+='min-width:56px;width:auto;padding:0 10px;height:44px;font-size:10px;';
+    midiRow.appendChild(c);
+  });
+  wrap.appendChild(midiRow);
+
+  const midiHint=document.createElement('div');
+  midiHint.style.cssText='font-size:10px;color:var(--text3);margin-top:1rem;line-height:1.6;';
+  midiHint.innerHTML=`Values: 0=None, 1=1/4, 2=1/8, 3=1/8T, 4=1/8+1/8T, 5=1/16, 6=1/16T, 7=1/16+1/16T, 8=1/32. Pressing a button sets it immediately — no toggle needed.`;
+  wrap.appendChild(midiHint);
+
+  canvas.appendChild(wrap);
+}
+
+function renderSkin(canvas) {
+  const header=document.createElement('div');header.className='section-header';header.textContent='LED Skin Colors';
+  canvas.appendChild(header);
+
+  const info=document.createElement('div');info.className='info-banner';
+  info.innerHTML='Customize what color each LED state will use. These are compiled into <strong>colors.py</strong> and <strong>skin.py</strong> in the generated script. You can add custom colors beyond the default 5 by editing <strong>colors.py</strong> directly after export.'
+    +'<br><br>🟡 <strong>Single-color LEDs (old keyboards, red/green only)?</strong> No problem — your controller ignores the specific color and just reads <strong>0 = off</strong>, <strong>any other value = on</strong>. Just make sure all "off" states are set to <strong>BLACK</strong> and "on" states are anything else. The exact color choice won\'t matter.';
+  canvas.appendChild(info);
+
+  const wrap=document.createElement('div');wrap.className='grid-wrap';
+
+  // Group entries by class
+  const groups = {};
+  Object.keys(DEFAULT_SKIN).forEach(key => {
+    const [cls] = key.split('.');
+    if (!groups[cls]) groups[cls] = [];
+    groups[cls].push(key);
+  });
+
+  Object.entries(groups).forEach(([groupName, keys]) => {
+    const gHeader=document.createElement('div');
+    gHeader.style.cssText='font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin:1rem 0 6px;';
+    gHeader.textContent=groupName;
+    wrap.appendChild(gHeader);
+
+    const grid=document.createElement('div');grid.className='skin-grid';
+    keys.forEach(key => {
+      const val = STATE.skin[key] || 'BLACK';
+      const entry=document.createElement('div');entry.className='skin-entry';
+      const name=document.createElement('span');name.className='skin-name';name.textContent=key.split('.')[1];
+      const colorRow=document.createElement('div');colorRow.className='skin-color-row';
+      const swatch=document.createElement('div');swatch.className='skin-swatch';swatch.style.background=COLOR_HEX[val]||'#111';
+      swatch.id='swatch_'+key.replace('.','_');
+      const sel=document.createElement('select');sel.className='skin-select';
+      COLOR_OPTIONS.forEach(c=>{
+        const opt=document.createElement('option');opt.value=c;opt.textContent=c;
+        if(c===val) opt.selected=true;
+        sel.appendChild(opt);
+      });
+      sel.onchange=function(){
+        STATE.skin[key]=this.value;
+        document.getElementById('swatch_'+key.replace('.','_')).style.background=COLOR_HEX[this.value]||'#111';
+      };
+      colorRow.appendChild(swatch);colorRow.appendChild(sel);
+      entry.appendChild(name);entry.appendChild(colorRow);
+      grid.appendChild(entry);
+    });
+    wrap.appendChild(grid);
+  });
+
+  const resetBtn=document.createElement('button');
+  resetBtn.className='btn-sm';
+  resetBtn.style.cssText='margin-top:1rem;';
+  resetBtn.textContent='Reset to Defaults';
+  resetBtn.onclick=function(){
+    STATE.skin=Object.assign({},DEFAULT_SKIN);
+    renderTab('skin');
+  };
+  wrap.appendChild(resetBtn);
+
+  canvas.appendChild(wrap);
+}
+
+function renderExport(canvas) {
+  const total=allControls.length;
+  const mapped=Object.keys(STATE.mappings).length;
+  const area=document.createElement('div');area.className='export-area';
+  area.innerHTML=`
+    <div class="export-title">Ready to Export</div>
+    <div class="export-sub">Universal Surface Generator v2<br>Emerald Moon Labs &amp; Stanley Gurvich<br>Your mappings will be compiled into a Python Remote Script for Ableton Live.</div>
+    <div class="export-stats">
+      <div class="stat-card"><div class="stat-num">${mapped}</div><div class="stat-label">Mapped</div></div>
+      <div class="stat-card"><div class="stat-num">${total-mapped}</div><div class="stat-label">Skipped</div></div>
+      <div class="stat-card"><div class="stat-num">${STATE.cols}×${STATE.rows}</div><div class="stat-label">Grid</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);text-align:center;">
+      Controller: <strong style="color:var(--text)">${STATE.name}</strong> &nbsp;·&nbsp;
+      LED Feedback: <strong style="color:var(--text)">${STATE.ledEnabled?'On':'Off'}</strong>
+    </div>
+    <button class="btn-export" onclick="exportScript()">Download Script ZIP</button>
+    <div style="font-size:11px;color:var(--text3);text-align:center;max-width:380px;line-height:1.8;">
+      Extract ZIP → place <code style="color:var(--accent)">${STATE.name}/</code> folder in:<br>
+      Mac: <code style="color:var(--text2);">~/Library/Preferences/Ableton/Live x.x.x/User Remote Scripts/</code><br>
+      Win: <code style="color:var(--text2);">%AppData%/Ableton/Live x.x.x/Preferences/User Remote Scripts/</code>
+    </div>
+    <div class="info-banner" style="max-width:480px;margin-top:0.5rem;">
+      <strong>v2 fixes included in generated code:</strong><br>
+      ✓ Select Track buttons wired to Session component<br>
+      ✓ Send B wired to Mixer component<br>
+      ✓ Master Pan wired to Mixer component<br>
+      ✓ Redo button wired to Transport component<br>
+      ✓ Tempo Up/Down wired to Transport component<br>
+      ✓ Scene scroll (nav) wired to Session component<br>
+      ✓ Custom skin colors applied from Skin Colors tab
+    </div>
+  `;
+  canvas.appendChild(area);
+}
+
+const TOOLTIPS = {
+  // Transport
+  'transport_play':      'Play/Pause the transport',
+  'transport_stop':      'Stop playback and return to start',
+  'transport_record':    'Toggle session record',
+  'transport_overdub':   'Toggle session overdub (layer new clips over playing ones)',
+  'transport_undo':      'Undo last action',
+  'transport_redo':      'Redo last undone action',
+  'transport_metro':     'Toggle metronome on/off',
+  'transport_tap_tempo': 'Tap to set tempo',
+  'transport_tempo_up':  'Increase BPM by 1',
+  'transport_tempo_dn':  'Decrease BPM by 1',
+  'transport_capture':   'Capture MIDI — grab notes you just played into a new clip',
+  'transport_duplicate': 'Duplicate the selected clip or scene',
+  'transport_loop':      'Toggle arrangement loop on/off',
+  'transport_punch_in':  'Toggle punch-in marker (start recording at this point)',
+  'transport_punch_out': 'Toggle punch-out marker (stop recording at this point)',
+  'transport_back_to_arr': 'Back to Arranger — resume playing arrangement after session clip override',
+  'transport_arr_overdub': 'Toggle arrangement overdub (record automation/MIDI into arrangement)',
+  // Navigation
+  'nav_nav_up':    'Scroll the session grid up',
+  'nav_nav_dn':    'Scroll the session grid down',
+  'nav_nav_left':  'Scroll tracks left',
+  'nav_nav_right': 'Scroll tracks right',
+  'nav_scene_up':  'Move scene selection up',
+  'nav_scene_dn':  'Move scene selection down',
+  'shift':         'Shift modifier — hold while pressing other buttons for secondary actions (select instead of launch, delete, etc.)',
+  // Quantize
+  'quant_toggle':  'Toggle fixed-length recording on/off',
+  'midi_quant_none':        'Set MIDI input quantization to None (record exactly as played)',
+  'midi_quant_1_4':         'Quantize recorded MIDI to 1/4 note grid',
+  'midi_quant_1_8':         'Quantize recorded MIDI to 1/8 note grid',
+  'midi_quant_1_8T':        'Quantize recorded MIDI to 1/8 triplet grid',
+  'midi_quant_1_8+1/8T':    'Quantize recorded MIDI to 1/8 + 1/8 triplet grid',
+  'midi_quant_1_16':        'Quantize recorded MIDI to 1/16 note grid',
+  'midi_quant_1_16T':       'Quantize recorded MIDI to 1/16 triplet grid',
+  'midi_quant_1_16+1/16T':  'Quantize recorded MIDI to 1/16 + 1/16 triplet grid',
+  'midi_quant_1_32':        'Quantize recorded MIDI to 1/32 note grid',
+};
+
+function blinkCell(id, e) {
+  e.preventDefault();
+  const m = STATE.mappings[id];
+  if (!m) return;
+  if (!STATE.midiOut) {
+    alert('No MIDI Out connected — select a MIDI Out port in the top bar to test LEDs.');
+    return;
+  }
+  const ch = m.channel;
+  const num = m.number;
+  const noteOn  = [0x90 | ch, num, 127];
+  const noteOff = [0x80 | ch, num, 0];
+  let i = 0;
+  const interval = setInterval(function() {
+    if (i >= 6) { clearInterval(interval); STATE.midiOut.send(noteOff); return; }
+    STATE.midiOut.send(i % 2 === 0 ? noteOn : noteOff);
+    i++;
+  }, 120);
+}
+
+function makeCell(id, extraClass, labelText) {
+  const div=document.createElement('div');
+  const bound=STATE.mappings[id];
+  const isListening=STATE.listening===id;
+  const isSelected=STATE.selectedId===id;
+  div.className=`cell ${extraClass||''} ${bound?'bound':''} ${isListening?'listening':''} ${isSelected&&!isListening?'selected':''}`;
+  div.dataset.id=id;
+  if(TOOLTIPS[id]) div.title=TOOLTIPS[id];
+  if(bound){
+    div.innerHTML=`<span style="font-size:8px;line-height:1.2;text-align:center;">${bound.type===0?'N':'CC'}<br>${bound.number}<br>ch${bound.channel+1}</span>`;
+  } else {
+    div.innerHTML=`<span style="font-size:8px;opacity:0.9;text-align:center;color:var(--text2);">${labelText||''}</span>`;
+  }
+  div.onclick=()=>selectControl(id);
+  div.oncontextmenu=(e)=>blinkCell(id,e);
+  return div;
+}
+
+function selectControl(id) {
+  if (STATE.listening === id) { stopListening(); return; }
+  if(STATE.listening && STATE.listening!==id) { STATE.listening=id; renderTab(STATE.currentTab); return; }
+  STATE.selectedId=id;
+  STATE.listening=id;
+  renderTab(STATE.currentTab);
+  updateSelectedCard(id);
+}
+
+function updateSelectedCard(id) {
+  const ctrl=allControls.find(c=>c.id===id);
+  const mapping=STATE.mappings[id];
+  const card=document.getElementById('selectedInfo');
+  if(!ctrl){card.innerHTML='';return;}
+
+  const typeLabel=mapping?(mapping.type===0?'Note':'CC'):'';
+  const typePill=mapping?(mapping.type===0?'pill-note':'pill-cc'):'';
+  const manSelNote=mapping&&mapping.type===0?'selected':'';
+  const manSelCC=mapping&&mapping.type===1?'selected':'';
+  const manNum=mapping?mapping.number:0;
+  const manCh=mapping?mapping.channel+1:1;
+
+  const mappedHtml=mapping
+    ? '<div class="sidebar-row"><span class="sidebar-key">Type</span><span class="pill '+typePill+'">'+typeLabel+'</span></div>'
+      +'<div class="sidebar-row"><span class="sidebar-key">Number</span><span class="sidebar-val">'+mapping.number+'</span></div>'
+      +'<div class="sidebar-row"><span class="sidebar-key">Channel</span><span class="sidebar-val">'+(mapping.channel+1)+'</span></div>'
+      +'<div class="sidebar-row"><span class="sidebar-key">Status</span><span class="pill pill-bound">Bound</span></div>'
+      +'<button class="clear-btn" onclick="clearMapping(\''+id+'\')">Remove Mapping</button>'
+    : '<div style="font-size:11px;color:var(--text3);">Wiggle hardware to map, or enter manually:</div>'
+      +'<span class="pill pill-unbound">Unbound</span>';
+
+  const manualHtml=''
+    +'<div style="border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:6px;">'
+      +'<div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);">Manual Entry</div>'
+      +'<div style="display:flex;gap:4px;align-items:center;">'
+        +'<select id="manType" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-family:inherit;font-size:11px;flex:1;">'
+          +'<option value="0" '+manSelNote+'>Note</option>'
+          +'<option value="1" '+manSelCC+'>CC</option>'
+        +'</select>'
+        +'<input id="manNum" type="number" min="0" max="127" value="'+manNum+'" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-family:inherit;font-size:11px;width:52px;text-align:center;" />'
+        +'<input id="manCh" type="number" min="1" max="16" value="'+manCh+'" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-family:inherit;font-size:11px;width:42px;text-align:center;" placeholder="ch" />'
+      +'</div>'
+      +'<button onclick="applyManual(\''+id+'\')" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:5px;color:var(--text2);font-family:inherit;font-size:11px;cursor:pointer;transition:all 0.1s;" onmouseover="this.style.borderColor=\'var(--accent)\';this.style.color=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border2)\';this.style.color=\'var(--text2)\'">Apply Manual</button>'
+    +'</div>';
+
+  card.innerHTML=''
+    +'<div style="display:flex;flex-direction:column;gap:8px;">'
+      +'<div style="font-weight:600;color:var(--text);font-size:12px;">'+getControlLabel(ctrl)+'</div>'
+      +(TOOLTIPS[id]?'<div style="font-size:10px;color:var(--text2);line-height:1.6;padding:4px 6px;background:var(--bg3);border-radius:4px;border-left:2px solid var(--border2);">'+TOOLTIPS[id]+'</div>':'')
+      +mappedHtml
+      +manualHtml
+    +'</div>';
+}
+
+function applyManual(id) {
+  const type=parseInt(document.getElementById('manType').value);
+  const number=parseInt(document.getElementById('manNum').value);
+  const channel=parseInt(document.getElementById('manCh').value)-1;
+  if(isNaN(number)||number<0||number>127){alert('Number must be 0–127');return;}
+  if(isNaN(channel)||channel<0||channel>15){alert('Channel must be 1–16');return;}
+  const conflict=Object.entries(STATE.mappings).find(([cid,m])=>cid!==id&&m.type===type&&m.number===number&&m.channel===channel);
+  if(conflict){
+    const other=allControls.find(c=>c.id===conflict[0]);
+    if(!confirm(`Already assigned to ${other?getControlLabel(other):conflict[0]}. Reassign?`)) return;
+    delete STATE.mappings[conflict[0]];
+  }
+  bindMidi(id,{type,number,channel,value:127});
+}
+
+function skipListening() {
+  const order=getListeningOrder();
+  const idx=order.indexOf(STATE.listening);
+  const next=order[idx+1];
+  STATE.listening=next||null;
+  renderTab(STATE.currentTab);
+  if(STATE.listening) updateSelectedCard(STATE.listening);
+}
+
+function getListeningOrder() {
+  const tabGroups={
+    'session':['clip','scene','stop','arm','solo','mute','select'],
+    'mixer':['volume','pan','sendA','sendB','masterVol','masterPan','crossfader'],
+    'transport':['play','stop','record','overdub','undo','redo','metro','tap_tempo','tempo_up','tempo_dn'],
+    'navigation':['nav_up','nav_dn','nav_left','nav_right','scene_up','scene_dn','shift'],
+    'quantize':['quant_toggle','quant_size']
+  };
+  const types=tabGroups[STATE.currentTab]||[];
+  return allControls.filter(c=>types.some(t=>c.type===t||c.id.includes(t))).map(c=>c.id);
+}
+
+function onMidiMessage(e) {
+  if(!STATE.listening) return;
+  const [status,number,value]=e.data;
+  const type=status>>4;
+  const channel=status&0xf;
+  if(type===9&&value>0) { handleBind(STATE.listening,{type:0,number,channel,value}); }
+  else if(type===11) { handleBind(STATE.listening,{type:1,number,channel,value}); }
+  else if(type===8) { handleBind(STATE.listening,{type:0,number,channel,value:0}); }
+}
+
+function handleBind(id, mapping) {
+  const conflict=Object.entries(STATE.mappings).find(([cid,m])=>cid!==id&&m.type===mapping.type&&m.number===mapping.number&&m.channel===mapping.channel);
+  if(conflict) { delete STATE.mappings[conflict[0]]; }
+  bindMidi(id, mapping);
+}
+
+function bindMidi(id, mapping) {
+  STATE.mappings[id]=mapping;
+  const order=getListeningOrder();
+  const idx=order.indexOf(id);
+  const nextUnbound=order.slice(idx+1).find(cid=>!STATE.mappings[cid]);
+  STATE.listening=nextUnbound||null;
+  STATE.selectedId=id;
+  updateProgress();
+  renderTab(STATE.currentTab);
+  updateSelectedCard(id);
+}
+
+function clearMapping(id) {
+  delete STATE.mappings[id];
+  updateProgress();
+  renderTab(STATE.currentTab);
+  updateSelectedCard(id);
+}
+
+function clearAll() {
+  if(!confirm('Clear all mappings? This cannot be undone.')) return;
+  STATE.mappings={};
+  STATE.listening=null;
+  STATE.selectedId=null;
+  updateProgress();
+  renderTab(STATE.currentTab);
+}
+
+function updateProgress() {
+  const total=allControls.length;
+  const mapped=Object.keys(STATE.mappings).length;
+  const pct=total>0?Math.round(mapped/total*100):0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressText').textContent=`${mapped} / ${total} mapped`;
+  document.getElementById('progressPct').textContent=pct+'%';
+}
+
+// ── Code generation ──
+function exportScript() {
+  const zip=new JSZip();
+  const cols=STATE.cols, rows=STATE.rows;
+  const M=STATE.mappings;
+  const name=STATE.name;
+  const scriptName=STATE.scriptName||name;
+  const folder=zip.folder(name);
+
+  const getNum=(id)=>M[id]?M[id].number:-1;
+  const getCh=(id)=>M[id]?M[id].channel:0;
+  const getType=(id)=>M[id]?M[id].type:0;
+  const isBound=(id)=>M[id]!==undefined;
+  const msgType=(id)=>getType(id)===0?'MIDI_NOTE_TYPE':'MIDI_CC_TYPE';
+
+  const NL='\n';
+  const j=arr=>arr.join(NL);
+
+  // ── elements.py ──
+  const el=[];
+  el.push('from ableton.v3.control_surface import MIDI_NOTE_TYPE, MIDI_CC_TYPE, ElementsBase, MapMode');
+  el.push('');
+  el.push('class Elements(ElementsBase):');
+  el.push('    def __init__(self, *a, **k):');
+  el.push('        super().__init__(*a, **k)');
+  el.push('');
+
+  const clipNotes=[];
+  for(let r=0;r<rows;r++){
+    const row=[];
+    for(let c=0;c<cols;c++){
+      const id='clip_'+r+'_'+c;
+      row.push(isBound(id)?getNum(id):-1);
+    }
+    if(row.some(n=>n>=0)) clipNotes.push(row);
+  }
+  if(clipNotes.length>0){
+    const ch=getCh('clip_0_0');
+    const mt=msgType('clip_0_0');
+    const rgb=STATE.ledEnabled?'True':'False';
+    el.push('        self.add_button_matrix(');
+    el.push('            '+JSON.stringify(clipNotes)+',');
+    el.push('            base_name="Clip_Buttons", channels='+ch+',');
+    el.push('            msg_type='+mt+', is_rgb='+rgb+', is_momentary=True');
+    el.push('        )');
+    el.push('');
+  }
+
+  const matrixDefs=[
+    {prefix:'scene',mname:'Scene_Buttons',count:rows},
+    {prefix:'stop',mname:'Stop_Buttons',count:cols},
+    {prefix:'arm',mname:'Arm_Buttons',count:cols},
+    {prefix:'solo',mname:'Solo_Buttons',count:cols},
+    {prefix:'mute',mname:'Mute_Buttons',count:cols},
+    {prefix:'sel',mname:'Select_Buttons',count:cols},
+  ];
+  matrixDefs.forEach(function(d){
+    const notes=[];
+    for(let i=0;i<d.count;i++){
+      const n=getNum(d.prefix+'_'+i);
+      if(n>=0) notes.push(n);
+    }
+    if(notes.length>0){
+      const id=d.prefix+'_0';
+      const rgb=STATE.ledEnabled?'True':'False';
+      el.push('        self.add_button_matrix(['+JSON.stringify(notes)+'], base_name="'+d.mname+'", channels='+getCh(id)+', msg_type='+msgType(id)+', is_rgb='+rgb+', is_momentary=True)');
+      el.push('');
+    }
+  });
+
+  [['vol','Volume_Encoders'],['pan','Pan_Encoders'],['senda','SendA_Encoders'],['sendb','SendB_Encoders']].forEach(function(pair){
+    const pfx=pair[0], mname=pair[1];
+    const notes=[];
+    for(let i=0;i<cols;i++){
+      const n=getNum(pfx+'_'+i);
+      if(n>=0) notes.push(n);
+    }
+    if(notes.length>0){
+      const fb=STATE.ledEnabled?'True':'False';
+      el.push('        self.add_encoder_matrix(['+JSON.stringify(notes)+'], base_name="'+mname+'", channels='+getCh(pfx+'_0')+', map_mode=MapMode.LinearBinaryOffset, is_feedback_enabled='+fb+')');
+      el.push('');
+    }
+  });
+
+  const singles=[
+    ['transport_play','Play_Button'],['transport_stop','Stop_Button'],
+    ['transport_record','Record_Button'],['transport_overdub','Overdub_Button'],
+    ['transport_undo','Undo_Button'],['transport_redo','Redo_Button'],
+    ['transport_metro','Metronome_Button'],['transport_tap_tempo','TapTempo_Button'],
+    ['transport_tempo_up','TempoUp_Button'],['transport_tempo_dn','TempoDown_Button'],
+    ['transport_capture','Capture_Button'],['transport_duplicate','Duplicate_Button'],
+    ['transport_loop','Loop_Button'],['transport_punch_in','PunchIn_Button'],
+    ['transport_punch_out','PunchOut_Button'],['transport_back_to_arr','BackToArr_Button'],
+    ['transport_arr_overdub','ArrOverdub_Button'],
+    ['master_vol','MasterVolume_Encoder'],['master_pan','MasterPan_Encoder'],
+    ['crossfader','Crossfader_Encoder'],
+    ['nav_nav_up','NavUp_Button'],['nav_nav_dn','NavDown_Button'],
+    ['nav_nav_left','NavLeft_Button'],['nav_nav_right','NavRight_Button'],
+    ['nav_scene_up','SceneScrollUp_Button'],['nav_scene_dn','SceneScrollDown_Button'],
+    ['shift','Shift_Button'],['quant_toggle','FixedLength_Button'],
+  ];
+  QUANT_SIZES.forEach(function(q){
+    const safe=q.replace('/','_');
+    singles.push(['quant_size_'+safe,'QuantSize_'+safe+'_Button']);
+  });
+  MIDI_QUANT_SIZES.forEach(function(q){
+    const safe=q.replace('/','_');
+    singles.push(['midi_quant_'+safe,'MidiQuant_'+safe+'_Button']);
+  });
+  singles.forEach(function(pair){
+    const id=pair[0], ename=pair[1];
+    if(isBound(id)){
+      if(ename.includes('Encoder')){
+        el.push('        self.add_encoder('+getNum(id)+', "'+ename+'", channel='+getCh(id)+', map_mode=MapMode.LinearBinaryOffset)');
+      } else {
+        el.push('        self.add_button('+getNum(id)+', "'+ename+'", channel='+getCh(id)+', msg_type='+msgType(id)+')');
+      }
+    }
+  });
+  el.push('');
+
+  // ── colors.py (uses custom skin color names) ──
+  const usedColors = new Set(Object.values(STATE.skin));
+  // Always include BLACK and WHITE
+  usedColors.add('BLACK'); usedColors.add('WHITE');
+
+  // Map color names to SimpleColor values
+  const COLOR_VALUES = {
+    BLACK: 0, GREEN: 1, RED: 3, YELLOW: 5, BLUE: 9, WHITE: 127,
+    CYAN: 13, PURPLE: 49, ORANGE: 9, PINK: 53
+  };
+  // Better RGB values for extended colors
+  const COLOR_VALUES_EXTENDED = {
+    BLACK: 0, GREEN: 1, RED: 3, YELLOW: 5, BLUE: 9, WHITE: 127,
+    CYAN: 13, PURPLE: 49, ORANGE: 7, PINK: 53
+  };
+
+  const rgb=[];
+  rgb.push('from ableton.v3.control_surface.elements import SimpleColor');
+  rgb.push('');
+  rgb.push('class Rgb:');
+  [...usedColors].sort().forEach(c=>{
+    const val = COLOR_VALUES_EXTENDED[c] !== undefined ? COLOR_VALUES_EXTENDED[c] : 0;
+    rgb.push(`    ${c} = SimpleColor(${val})`);
+  });
+  rgb.push('');
+
+  // ── skin.py ──
+  const skin=[];
+  skin.push('from .colors import Rgb');
+  skin.push('');
+  skin.push('class Skin:');
+
+  const skinGroups = {};
+  Object.entries(STATE.skin).forEach(([key, val]) => {
+    const [cls, prop] = key.split('.');
+    if (!skinGroups[cls]) skinGroups[cls] = {};
+    skinGroups[cls][prop] = val;
+  });
+
+  Object.entries(skinGroups).forEach(([cls, props]) => {
+    skin.push(`    class ${cls}:`);
+    Object.entries(props).forEach(([prop, val]) => {
+      skin.push(`        ${prop} = Rgb.${val}`);
+    });
+  });
+  skin.push('');
+
+  // ── create_mappings lines ──
+  const ml=[];
+
+  // SESSION — now also includes select_track_buttons even without clips
+  const clipBound=Array.from({length:rows},function(_,r){
+    return Array.from({length:cols},function(_,c){ return isBound('clip_'+r+'_'+c); }).some(Boolean);
+  }).some(Boolean);
+  const hasAnySessionControl = clipBound
+    || Array.from({length:rows},(_,r)=>isBound('scene_'+r)).some(Boolean)
+    || Array.from({length:cols},(_,c)=>isBound('stop_'+c)).some(Boolean)
+    || Array.from({length:cols},(_,c)=>isBound('sel_'+c)).some(Boolean);
+
+  if(hasAnySessionControl){
+    ml.push('    mappings["Session"] = dict(');
+    if(clipBound)
+      ml.push('        clip_launch_buttons="Clip_Buttons",');
+    if(Array.from({length:rows},function(_,r){return isBound('scene_'+r);}).some(Boolean))
+      ml.push('        scene_launch_buttons="Scene_Buttons",');
+    if(Array.from({length:cols},function(_,c){return isBound('stop_'+c);}).some(Boolean))
+      ml.push('        stop_track_clip_buttons="Stop_Buttons",');
+    if(Array.from({length:cols},function(_,c){return isBound('sel_'+c);}).some(Boolean))
+      ml.push('        select_track_buttons="Select_Buttons",');  // FIX: was missing
+    if(isBound('nav_nav_up'))    ml.push('        scene_scroll_up_button="NavUp_Button",');
+    if(isBound('nav_nav_dn'))    ml.push('        scene_scroll_down_button="NavDown_Button",');
+    if(isBound('nav_nav_left'))  ml.push('        track_scroll_left_button="NavLeft_Button",');
+    if(isBound('nav_nav_right')) ml.push('        track_scroll_right_button="NavRight_Button",');
+    if(isBound('nav_scene_up'))  ml.push('        scene_scroll_up_button="SceneScrollUp_Button",');  // FIX
+    if(isBound('nav_scene_dn'))  ml.push('        scene_scroll_down_button="SceneScrollDown_Button",');  // FIX
+    ml.push('    )');
+    ml.push('');
+  }
+
+  const hasMixer=
+    ['vol','pan','senda','sendb','arm','solo','mute','sel'].some(function(p){
+      return Array.from({length:cols},function(_,i){return isBound(p+'_'+i);}).some(Boolean);
+    }) || isBound('master_vol') || isBound('master_pan') || isBound('crossfader');
+  if(hasMixer){
+    ml.push('    mappings["Mixer"] = dict(');
+    if(Array.from({length:cols},function(_,i){return isBound('vol_'+i);}).some(Boolean))   ml.push('        volume_controls="Volume_Encoders",');
+    if(Array.from({length:cols},function(_,i){return isBound('pan_'+i);}).some(Boolean))   ml.push('        pan_controls="Pan_Encoders",');
+    // FIX: Send B now included alongside A
+    const hasSendA=Array.from({length:cols},function(_,i){return isBound('senda_'+i);}).some(Boolean);
+    const hasSendB=Array.from({length:cols},function(_,i){return isBound('sendb_'+i);}).some(Boolean);
+    if(hasSendA && hasSendB) ml.push('        send_controls=["SendA_Encoders", "SendB_Encoders"],');
+    else if(hasSendA)        ml.push('        send_controls=["SendA_Encoders"],');
+    else if(hasSendB)        ml.push('        send_controls=["SendB_Encoders"],');
+    if(Array.from({length:cols},function(_,i){return isBound('arm_'+i);}).some(Boolean))   ml.push('        arm_buttons="Arm_Buttons",');
+    if(Array.from({length:cols},function(_,i){return isBound('solo_'+i);}).some(Boolean))  ml.push('        solo_buttons="Solo_Buttons",');
+    if(Array.from({length:cols},function(_,i){return isBound('mute_'+i);}).some(Boolean))  ml.push('        mute_buttons="Mute_Buttons",');
+    if(isBound('master_vol'))  ml.push('        master_volume_control="MasterVolume_Encoder",');
+    if(isBound('master_pan'))  ml.push('        master_pan_control="MasterPan_Encoder",');  // FIX: was missing
+    if(isBound('crossfader'))  ml.push('        crossfader_control="Crossfader_Encoder",');
+    ml.push('    )');
+    ml.push('');
+  }
+
+  // FIX: transport_redo and tempo_up/dn now included
+  const hasTransport=['transport_play','transport_stop','transport_record','transport_overdub',
+    'transport_undo','transport_redo','transport_metro','transport_tap_tempo',
+    'transport_tempo_up','transport_tempo_dn','transport_capture','transport_duplicate',
+    'transport_loop','transport_punch_in','transport_punch_out',
+    'transport_back_to_arr','transport_arr_overdub'].some(isBound);
+  if(hasTransport){
+    ml.push('    mappings["Transport"] = dict(');
+    if(isBound('transport_play'))        ml.push('        play_button="Play_Button",');
+    if(isBound('transport_stop'))        ml.push('        stop_button="Stop_Button",');
+    if(isBound('transport_record'))      ml.push('        record_button="Record_Button",');
+    if(isBound('transport_overdub'))     ml.push('        overdub_button="Overdub_Button",');
+    if(isBound('transport_undo'))        ml.push('        undo_button="Undo_Button",');
+    if(isBound('transport_redo'))        ml.push('        redo_button="Redo_Button",');
+    if(isBound('transport_metro'))       ml.push('        metronome_button="Metronome_Button",');
+    if(isBound('transport_tap_tempo'))   ml.push('        tap_tempo_button="TapTempo_Button",');
+    if(isBound('transport_tempo_up'))    ml.push('        tempo_up_button="TempoUp_Button",');
+    if(isBound('transport_tempo_dn'))    ml.push('        tempo_down_button="TempoDown_Button",');
+    if(isBound('transport_capture'))     ml.push('        capture_midi_button="Capture_Button",');
+    if(isBound('transport_duplicate'))   ml.push('        duplicate_button="Duplicate_Button",');
+    if(isBound('transport_loop'))        ml.push('        loop_button="Loop_Button",');
+    if(isBound('transport_punch_in') && isBound('transport_punch_out'))
+                                         ml.push('        punch_in_button="PunchIn_Button", punch_out_button="PunchOut_Button",');
+    else {
+      if(isBound('transport_punch_in'))  ml.push('        punch_in_button="PunchIn_Button",');
+      if(isBound('transport_punch_out')) ml.push('        punch_out_button="PunchOut_Button",');
+    }
+    if(isBound('transport_back_to_arr')) ml.push('        back_to_arranger_button="BackToArr_Button",');
+    if(isBound('transport_arr_overdub')) ml.push('        arrangement_overdub_button="ArrOverdub_Button",');
+    ml.push('    )');
+    ml.push('');
+  }
+
+  const hasQuantize=isBound('quant_toggle')||QUANT_SIZES.some(function(q){return isBound('quant_size_'+q.replace('/','_'));});
+  if(hasQuantize){
+    ml.push('    mappings["FixedLength"] = dict(');
+    if(isBound('quant_toggle')) ml.push('        toggle_button="FixedLength_Button",');
+    QUANT_SIZES.forEach(function(q){
+      const safe=q.replace('/','_');
+      if(isBound('quant_size_'+safe)) ml.push('        size_'+safe+'_button="QuantSize_'+safe+'_Button",');
+    });
+    ml.push('    )');
+    ml.push('');
+  }
+
+  const hasMidiQuant=MIDI_QUANT_SIZES.some(function(q){return isBound('midi_quant_'+q.replace('/','_'));});
+  if(hasMidiQuant){
+    ml.push('    mappings["MidiQuant"] = dict(');
+    MIDI_QUANT_SIZES.forEach(function(q){
+      const safe=q.replace('/','_');
+      if(isBound('midi_quant_'+safe)) ml.push('        quant_'+safe+'_button="MidiQuant_'+safe+'_Button",');
+    });
+    ml.push('    )');
+    ml.push('');
+  }
+
+  // ── midi_quant_component.py ──
+  const MIDI_QUANT_MAP={
+    'none':       '0',
+    '1/4':        '1',
+    '1/8':        '2',
+    '1/8T':       '3',
+    '1/8+1/8T':   '4',
+    '1/16':       '5',
+    '1/16T':      '6',
+    '1/16+1/16T': '7',
+    '1/32':       '8',
+  };
+  const mq=[];
+  mq.push('from ableton.v3.control_surface import Component');
+  mq.push('from ableton.v3.control_surface.controls import ButtonControl');
+  mq.push('import logging');
+  mq.push('');
+  mq.push('logger = logging.getLogger("'+name+'")');
+  mq.push('');
+  mq.push('class MidiQuantComponent(Component):');
+  MIDI_QUANT_SIZES.forEach(function(q){ mq.push('    quant_'+q.replace('/','_')+'_button = ButtonControl(color=None)'); });
+  mq.push('');
+  MIDI_QUANT_SIZES.forEach(function(q){
+    const safe=q.replace('/','_');
+    const val=MIDI_QUANT_MAP[q]||'0';
+    mq.push('    @quant_'+safe+'_button.pressed');
+    mq.push('    def on_quant_'+safe+'(self, _):');
+    mq.push('        self.song.midi_recording_quantization = '+val);
+    mq.push('        logger.info("MIDI quant set to '+q+'")');
+    mq.push('');
+  });
+
+  // ── quant_component.py ──
+  const QUANT_MAP={
+    '1/8': 'Quantization.q_eight',
+    '1/4': 'Quantization.q_quarter',
+    '1/2': 'Quantization.q_half',
+    '1bar': 'Quantization.q_bar',
+    '2bar': 'Quantization.q_2_bars',
+    '4bar': 'Quantization.q_4_bars',
+    '8bar': 'Quantization.q_8_bars',
+  };
+  const qc=[];
+  qc.push('from ableton.v3.control_surface import Component');
+  qc.push('from ableton.v3.control_surface.controls import ButtonControl');
+  qc.push('from Live.Song import Quantization');
+  qc.push('import logging');
+  qc.push('');
+  qc.push('logger = logging.getLogger("'+name+'")');
+  qc.push('');
+  qc.push('QUANT_VALUES = [');
+  QUANT_SIZES.forEach(function(q){ qc.push('    '+(QUANT_MAP[q]||'Quantization.q_bar')+','); });
+  qc.push(']');
+  qc.push('');
+  qc.push('class FixedLengthComponent(Component):');
+  qc.push('    toggle_button = ButtonControl(color=None)');
+  QUANT_SIZES.forEach(function(q){ qc.push('    size_'+q.replace('/','_')+'_button = ButtonControl(color=None)'); });
+  qc.push('');
+  qc.push('    def __init__(self, *a, **k):');
+  qc.push('        super().__init__(*a, **k)');
+  qc.push('        self._fixed_length_enabled = False');
+  qc.push('');
+  qc.push('    @toggle_button.pressed');
+  qc.push('    def on_toggle(self, _):');
+  qc.push('        self._fixed_length_enabled = not self._fixed_length_enabled');
+  qc.push('        if self._fixed_length_enabled:');
+  qc.push('            logger.info("Fixed length ON")');
+  qc.push('        else:');
+  qc.push('            self.song.clip_trigger_quantization = Quantization.q_no_q');
+  qc.push('            logger.info("Fixed length OFF")');
+  qc.push('');
+  QUANT_SIZES.forEach(function(q,i){
+    const safe=q.replace('/','_');
+    qc.push('    @size_'+safe+'_button.pressed');
+    qc.push('    def on_size_'+safe+'(self, _):');
+    qc.push('        self._fixed_length_enabled = True');
+    qc.push('        self.song.clip_trigger_quantization = QUANT_VALUES['+i+']');
+    qc.push('        logger.info("Fixed length set to '+q+'")');
+    qc.push('');
+  });
+
+  // ── __init__.py ──
+  const defaultQuant='Quantization.q_bar';
+  const init=[];
+  init.push('import logging');
+  init.push('import os');
+  init.push('from ableton.v3.control_surface import ControlSurface, ControlSurfaceSpecification, create_skin');
+  init.push('from ableton.v3.control_surface.components import SessionComponent, MixerComponent, TransportComponent');
+  init.push('from Live.Song import Quantization');
+  init.push('from . import elements as el');
+  init.push('from .skin import Skin');
+  if(hasQuantize) init.push('from .quant_component import FixedLengthComponent');
+  if(hasMidiQuant) init.push('from .midi_quant_component import MidiQuantComponent');
+  if(STATE.holdSelectArm) init.push('from .hold_select_arm import HoldSelectArmComponent');
+  init.push('');
+  init.push('logger = logging.getLogger("'+name+'")');
+  init.push('ROWS = '+rows);
+  init.push('COLS = '+cols);
+  init.push('DEFAULT_QUANTIZE = '+defaultQuant);
+  init.push('');
+  init.push('');
+  init.push('def create_mappings(control_surface):');
+  init.push('    mappings = {}');
+  ml.forEach(function(l){ init.push(l); });
+  init.push('    return mappings');
+  init.push('');
+  init.push('');
+  init.push('class Specification(ControlSurfaceSpecification):');
+  init.push('    elements_type = el.Elements');
+  init.push('    control_surface_skin = create_skin(skin=Skin)');
+  init.push('    create_mappings_function = create_mappings');
+  init.push('    num_tracks = COLS');
+  init.push('    num_scenes = ROWS');
+  init.push('    component_map = {');
+  init.push('        "Session": SessionComponent,');
+  init.push('        "Mixer": MixerComponent,');
+  init.push('        "Transport": TransportComponent,');
+  if(hasQuantize) init.push('        "FixedLength": FixedLengthComponent,');
+  if(hasMidiQuant) init.push('        "MidiQuant": MidiQuantComponent,');
+  if(STATE.holdSelectArm) init.push('        "HoldSelectArm": HoldSelectArmComponent,');
+  init.push('    }');
+  init.push('');
+  init.push('');
+  init.push('def create_instance(c_instance):');
+  init.push('    return '+name+'(Specification, c_instance=c_instance)');
+  init.push('');
+  init.push('');
+  init.push('class '+name+'(ControlSurface):');
+  init.push('    def __init__(self, *a, **k):');
+  init.push('        super().__init__(*a, **k)');
+  init.push('        self.log_level = "info"');
+  init.push('        self.start_logging()');
+  init.push('        self.show_message("'+scriptName+': Connected")');
+  init.push('        logger.info("'+name+': init")');
+  init.push('');
+  init.push('    def setup(self):');
+  init.push('        super().setup()');
+  init.push('        try:');
+  init.push('            self.song.clip_trigger_quantization = DEFAULT_QUANTIZE');
+  init.push('        except Exception as e:');
+  init.push('            logger.warning("Could not set quantize: " + str(e))');
+  init.push('');
+  init.push('    def start_logging(self):');
+  init.push('        module_path = os.path.dirname(os.path.realpath(__file__))');
+  init.push('        log_dir = os.path.join(module_path, "logs")');
+  init.push('        if not os.path.exists(log_dir):');
+  init.push('            os.mkdir(log_dir, 0o755)');
+  init.push('        log_path = os.path.join(log_dir, "'+name+'.log")');
+  init.push('        self.log_file_handler = logging.FileHandler(log_path)');
+  init.push('        self.log_file_handler.setLevel(self.log_level.upper())');
+  init.push('        formatter = logging.Formatter("(%(asctime)s) [%(levelname)s] %(message)s")');
+  init.push('        self.log_file_handler.setFormatter(formatter)');
+  init.push('        logger.addHandler(self.log_file_handler)');
+  init.push('');
+  init.push('    def stop_logging(self):');
+  init.push('        logger.removeHandler(self.log_file_handler)');
+  init.push('');
+  init.push('    def disconnect(self):');
+  init.push('        self.show_message("'+scriptName+': Disconnected")');
+  init.push('        self.stop_logging()');
+  init.push('        super().disconnect()');
+  init.push('');
+
+  // ── README.md ──
+  const mappedList=Object.entries(M).map(function(e){
+    const id=e[0], m=e[1];
+    return '- '+id+': '+(m.type===0?'Note':'CC')+' '+m.number+' Ch'+(m.channel+1);
+  }).join(NL);
+
+  const readme=[
+    '# '+scriptName+' — Ableton Remote Script',
+    'Generated by Universal Surface Generator v2 — Emerald Moon Labs & Stanley Gurvich',
+    '',
+    'Script folder name: '+name,
+    'Grid: '+cols+' columns x '+rows+' rows',
+    'LED Feedback: '+(STATE.ledEnabled?'Enabled':'Disabled'),
+    '',
+    '## Installation',
+    '1. Extract the ZIP to get a `'+name+'/` folder',
+    '2. Place it in your User Remote Scripts directory:',
+    '   - Mac: ~/Library/Preferences/Ableton/Live x.x.x/User Remote Scripts/',
+    '   - Win: %AppData%\\Ableton\\Live x.x.x\\Preferences\\User Remote Scripts\\',
+    '3. Restart Ableton Live',
+    '4. Go to Preferences -> MIDI -> Control Surfaces -> select `'+name+'`',
+    '',
+    '## Mapped Controls ('+Object.keys(M).length+' total)',
+    mappedList,
+    '',
+    '## v2 Bug Fixes Applied',
+    '- select_track_buttons now wired to SessionComponent',
+    '- Send B included in MixerComponent send_controls',
+    '- master_pan_control wired to MixerComponent',
+    '- redo_button wired to TransportComponent',
+    '- tempo_up/down buttons wired to TransportComponent',
+    '- Scene scroll (nav_scene_up/dn) wired to SessionComponent',
+    '- Custom skin colors applied',
+    '',
+    '## Notes',
+    '- Requires Ableton Live 11.3+ (ableton.v3 framework)',
+    '- Logs are written to the logs/ folder inside the script directory',
+    '- Tail logs: tail -f ~/Library/Preferences/Ableton/Live*/Log.txt (Mac)',
+  ];
+
+  const hasHoldSelectArm = STATE.holdSelectArm && Array.from({length:cols},function(_,c){return isBound('sel_'+c);}).some(Boolean);
+  if(hasHoldSelectArm){
+    ml.push('    mappings["HoldSelectArm"] = dict(');
+    ml.push('        select_buttons="Select_Buttons",');
+    ml.push('    )');
+    ml.push('');
+  }
+
+  // ── hold_select_arm.py ──
+  const hsa=[];
+  hsa.push('import logging');
+  hsa.push('from ableton.v3.control_surface import Component');
+  hsa.push('from ableton.v3.control_surface.controls import ButtonControl, control_matrix');
+  hsa.push('');
+  hsa.push('logger = logging.getLogger("'+name+'")');
+  hsa.push('HOLD_THRESHOLD = 0.5  # seconds — hold a SELECT button this long to arm that track');
+  hsa.push('');
+  hsa.push('');
+  hsa.push('class HoldSelectArmComponent(Component):');
+  hsa.push('    select_buttons = control_matrix(ButtonControl)');
+  hsa.push('');
+  hsa.push('    def __init__(self, *a, **k):');
+  hsa.push('        super().__init__(*a, **k)');
+  hsa.push('        self._timers = {}');
+  hsa.push('');
+  hsa.push('    @select_buttons.pressed');
+  hsa.push('    def on_select_pressed(self, button):');
+  hsa.push('        idx = button.index');
+  hsa.push('        self._timers[idx] = self._tasks.add(self._make_arm_task(idx))');
+  hsa.push('        self._timers[idx].delay(HOLD_THRESHOLD)');
+  hsa.push('');
+  hsa.push('    @select_buttons.released');
+  hsa.push('    def on_select_released(self, button):');
+  hsa.push('        idx = button.index');
+  hsa.push('        if idx in self._timers:');
+  hsa.push('            self._timers[idx].kill()');
+  hsa.push('            del self._timers[idx]');
+  hsa.push('');
+  hsa.push('    def _make_arm_task(self, idx):');
+  hsa.push('        def arm():');
+  hsa.push('            tracks = self.song.tracks');
+  hsa.push('            offset = self.song.view.track_offset');
+  hsa.push('            track_idx = offset + idx');
+  hsa.push('            if track_idx < len(tracks):');
+  hsa.push('                track = tracks[track_idx]');
+  hsa.push('                if track.can_be_armed:');
+  hsa.push('                    self.song.view.selected_track = track');
+  hsa.push('                    track.arm = not track.arm');
+  hsa.push('                    logger.info(f"Hold-arm toggled track {track_idx}: arm={track.arm}")');
+  hsa.push('        return arm');
+
+  if(hasQuantize) folder.file('quant_component.py', j(qc));
+  if(hasMidiQuant) folder.file('midi_quant_component.py', j(mq));
+  if(STATE.holdSelectArm) folder.file('hold_select_arm.py', j(hsa));
+  folder.file('__init__.py', j(init));
+  folder.file('elements.py', j(el));
+  folder.file('skin.py', j(skin));
+  folder.file('colors.py', j(rgb));
+  folder.file('README.md', j(readme));
+
+  zip.generateAsync({type:'blob'}).then(function(blob){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=name+'_remote_script.zip';
+    a.click(); URL.revokeObjectURL(url);
+  });
+}
+
+initMidi();
+buildAllControls();
+switchTab('session');
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && STATE.listening) stopListening();
+});
+</script>
+</body>
+</html>
