@@ -134,7 +134,12 @@
   .sel-hint { font-size: 11.5px; color: var(--text3); line-height: 1.5; }
   .manual { border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 7px; }
   .manual-title { font: 600 8.5px/1 var(--mono); letter-spacing: .22em; text-transform: uppercase; color: var(--text3); }
-  .manual-row { display: flex; gap: 5px; align-items: center; }
+  .manual-row { display: flex; gap: 5px; align-items: flex-start; }
+  .manual-col { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .manual-col-type { flex: 1; }
+  .manual-col-type select.manual-field { flex: none; width: 100%; appearance: none; -webkit-appearance: none; padding-right: 24px;
+    background: color-mix(in srgb, var(--bg) 55%, transparent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%237c7293' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 7px center / 12px; }
+  .manual-lbl { font: 600 8px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--text3); white-space: nowrap; }
   .manual-field { background: color-mix(in srgb, var(--bg) 55%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 0 8px; height: 30px;
     color: var(--text); font: 12px var(--mono); outline: none; text-align: center; transition: border-color .15s; }
   .manual-field:focus { border-color: var(--accent); }
@@ -1198,8 +1203,9 @@ function makeCell(id, extraClass, labelText) {
 }
 
 function selectControl(id) {
+  learnHold = null;   // a deliberate click: the next touch maps, even on the control just learned
   if (STATE.listening === id) { stopListening(); return; }
-  if(STATE.listening && STATE.listening!==id) { STATE.listening=id; renderTab(STATE.currentTab); return; }
+  if(STATE.listening && STATE.listening!==id) { STATE.listening=id; STATE.selectedId=id; renderTab(STATE.currentTab); updateSelectedCard(id); return; }
   STATE.selectedId=id;
   STATE.listening=id;
   renderTab(STATE.currentTab);
@@ -1232,12 +1238,15 @@ function updateSelectedCard(id) {
     +'<div class="manual">'
       +'<div class="manual-title">Manual Entry</div>'
       +'<div class="manual-row">'
-        +'<select id="manType" class="manual-field" title="Message type">'
-          +'<option value="0" '+manSelNote+'>Note</option>'
-          +'<option value="1" '+manSelCC+'>CC</option>'
-        +'</select>'
-        +'<input id="manNum" type="number" min="0" max="127" value="'+manNum+'" class="manual-field" style="width:56px;" title="Note / CC number" />'
-        +'<input id="manCh" type="number" min="1" max="16" value="'+manCh+'" class="manual-field" style="width:46px;" placeholder="ch" title="MIDI channel" />'
+        +'<label class="manual-col manual-col-type"><span class="manual-lbl">Type</span>'
+          +'<select id="manType" class="manual-field" title="Message type" onchange="document.getElementById(\'manNumLbl\').textContent=this.value===\'1\'?\'CC #\':\'Note #\'">'
+            +'<option value="0" '+manSelNote+'>Note</option>'
+            +'<option value="1" '+manSelCC+'>CC</option>'
+          +'</select></label>'
+        +'<label class="manual-col"><span class="manual-lbl" id="manNumLbl">'+(mapping&&mapping.type===1?'CC #':'Note #')+'</span>'
+          +'<input id="manNum" type="number" min="0" max="127" value="'+manNum+'" class="manual-field" style="width:58px;" title="Note or CC number, 0–127" /></label>'
+        +'<label class="manual-col"><span class="manual-lbl">Channel</span>'
+          +'<input id="manCh" type="number" min="1" max="16" value="'+manCh+'" class="manual-field" style="width:58px;" title="MIDI channel, 1–16" /></label>'
       +'</div>'
       +'<button class="manual-apply" onclick="applyManual(\''+id+'\')">Apply</button>'
     +'</div>';
@@ -1287,14 +1296,25 @@ function getListeningOrder() {
   return allControls.filter(c=>types.some(t=>c.type===t||c.id.includes(t))).map(c=>c.id);
 }
 
+// The control just learned. Its follow-up messages (a CC button's release, a knob or fader still moving)
+// are ignored until it has been quiet for LEARN_HOLD_MS, so one touch maps one slot, not the next ones too.
+let learnHold = null;
+const LEARN_HOLD_MS = 600;
+
 function onMidiMessage(e) {
   if(!STATE.listening) return;
   const [status,number,value]=e.data;
-  const type=status>>4;
+  const kind=status>>4;
   const channel=status&0xf;
-  if(type===9&&value>0) { handleBind(STATE.listening,{type:0,number,channel,value}); }
-  else if(type===11) { handleBind(STATE.listening,{type:1,number,channel,value}); }
-  else if(type===8) { handleBind(STATE.listening,{type:0,number,channel,value:0}); }
+  let type;
+  if(kind===9&&value>0) type=0;      // note on
+  else if(kind===11) type=1;         // CC
+  else return;                       // note off (or note on at velocity 0) is a release: never a new mapping
+  const now=performance.now();
+  const same=learnHold&&learnHold.type===type&&learnHold.number===number&&learnHold.channel===channel;
+  if(same&&(now-learnHold.t<LEARN_HOLD_MS||(type===1&&value===0))) { learnHold.t=now; return; }
+  learnHold={type,number,channel,t:now};
+  handleBind(STATE.listening,{type,number,channel,value});
 }
 
 function handleBind(id, mapping) {
