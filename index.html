@@ -2058,6 +2058,14 @@ switchTab('session');
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && STATE.listening) stopListening();
 });
+// Clicking away from the slot cancels learn. Slots handle their own clicks, the listening bar has Skip and
+// stop, and the Selected Control card stays usable so Manual Entry can still be typed into.
+document.addEventListener('click', function(e) {
+  if (!STATE.listening) return;
+  // (the path is fixed when the click starts, so it still holds a button the click itself redrew away)
+  if (e.composedPath().some(el => el.matches && el.matches('.cell, .listening-banner, #selectedCard'))) return;
+  stopListening();
+});
 </script>
 </body>
 </html>
