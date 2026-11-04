@@ -209,11 +209,11 @@
   .controls-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .listening-banner { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 18px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--salmon) 45%, transparent);
     background: color-mix(in srgb, var(--bg) 55%, transparent); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: 0 12px 30px -18px var(--salmon); }
-  /* fading in and out, the bar's height folding with it (the negative margin takes back the column's gap) so the grid glides rather than jumps */
-  .listening-banner.entering { overflow: hidden; animation: bannerIn .4s cubic-bezier(.2,.8,.2,1) backwards; }
-  .listening-banner.leaving { overflow: hidden; pointer-events: none; animation: bannerOut .34s ease-in forwards; }
-  @keyframes bannerIn { from { opacity: 0; max-height: 0; margin-top: -1rem; padding-top: 0; padding-bottom: 0; border-width: 0; transform: translateY(-4px); } to { max-height: 80px; } }
-  @keyframes bannerOut { from { max-height: 80px; } to { opacity: 0; max-height: 0; margin-top: -1rem; padding-top: 0; padding-bottom: 0; border-width: 0; transform: translateY(-4px); } }
+  /* a plain fade in and out */
+  .listening-banner.entering { animation: bannerIn .35s ease both; }
+  .listening-banner.leaving { pointer-events: none; animation: bannerOut .35s ease forwards; }
+  @keyframes bannerIn { from { opacity: 0; } }
+  @keyframes bannerOut { to { opacity: 0; } }
   .listening-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--salmon); animation: listen 1.4s ease-out infinite; flex-shrink: 0; }
   .listening-text { font-size: 12.5px; color: var(--text2); }
   .listening-ctrl { font-weight: 700; color: var(--salmon); }
@@ -714,12 +714,11 @@ function renderTab(tab) {
   renderListeningBanner(canvas, ['session','mixer','transport','navigation','quantize'].includes(tab));
 }
 
-// The "Listening for MIDI" bar sits under the tab's heading. Every mapping redraws the tab, so the bar
+// The "Listening for MIDI" bar sits below the tab's controls. Every mapping redraws the tab, so the bar
 // fades in only when listening starts and fades out only when it stops, not on each redraw in between.
 let bannerShown = false, bannerLastHTML = '';
 function renderListeningBanner(canvas, allowed) {
-  const header = canvas.querySelector('.section-header');
-  const show = allowed && !!STATE.listening && !!header;
+  const show = allowed && !!STATE.listening;
   const was = bannerShown;
   bannerShown = show;
   const banner = document.createElement('div');
@@ -728,13 +727,13 @@ function renderListeningBanner(canvas, allowed) {
     const ctrl = allControls.find(c=>c.id===STATE.listening);
     banner.innerHTML = bannerLastHTML = `<div class="listening-dot"></div><div class="listening-text">Listening for MIDI — wiggle a control to map <span class="listening-ctrl">${ctrl ? getControlLabel(ctrl) : STATE.listening}</span></div><button class="skip-btn" onclick="skipListening()">Skip →</button><button class="stop-btn" onclick="stopListening()" title="Stop MIDI learn (Esc)">✕</button>`;
     if (!was) banner.classList.add('entering');
-    header.after(banner);
-  } else if (was && allowed && header && bannerLastHTML) {
+    canvas.appendChild(banner);
+  } else if (was && allowed && bannerLastHTML) {
     banner.innerHTML = bannerLastHTML;
     banner.classList.add('leaving');
     banner.inert = true;
     banner.addEventListener('animationend', e => { if (e.target === banner) banner.remove(); });
-    header.after(banner);
+    canvas.appendChild(banner);
   }
 }
 
