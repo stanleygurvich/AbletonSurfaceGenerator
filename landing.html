@@ -29,8 +29,11 @@ main { position: relative; z-index: 1; height: 100%; box-sizing: border-box; dis
 .mark .lbl small { display: inline-flex; align-items: center; gap: 6px; font-size: 9.5px; letter-spacing: .2em; color: var(--violet); }
 .eye2 { margin: 0 0 14px; font: 600 11px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .2em; color: var(--violet); }
 h1 { margin: 0; font-weight: inherit; }
-h1 .big { display: block; color: transparent; -webkit-text-stroke: 1.5px var(--acc); font: 650 clamp(52px, 7.4vw, 108px)/.95 -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Arial, sans-serif;
-  letter-spacing: .2em; margin-right: -.2em; filter: drop-shadow(0 0 24px var(--glow)); }
+/* the name, outlined: an SVG stroke masked by the letters' own fill, so only its outer half shows. (A CSS text stroke
+   traces every contour of the glyph, and iOS's system font draws its letters from overlapping pieces: the A's crossbar
+   and legs then show through as lines inside the letter. The mask hides everything inside the letter, overlaps included.) */
+h1 .big { display: block; width: min(100%, 640px); height: auto; overflow: visible; filter: drop-shadow(0 0 24px var(--glow)); }
+h1 .big text { font: 650 150px -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Arial, sans-serif; }
 h1 .sub { display: block; margin-top: 14px; font-size: clamp(19px, 2.1vw, 28px); font-weight: 800; letter-spacing: -.02em; line-height: 1.2; }
 h1 .glow { color: var(--acc); text-shadow: 0 0 32px var(--glow); }
 .soon { margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; padding: 9px 18px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--acc) 45%, transparent);
@@ -81,7 +84,7 @@ nav a.give:hover, nav a.give:focus-visible { border-color: var(--salmon); color:
   <div class="txt">
     <div class="mark" aria-hidden="true"><span id="moon"></span><span class="lbl"><span>Emerald Moon Labs</span><small>Stanley Gurvich</small></span></div>
     <p class="eye2">Universal Surface Generator · Ableton Live</p>
-    <h1 aria-label="SURFACE: any MIDI controller, a real Ableton Live control surface"><span class="big" aria-hidden="true">SURFACE</span><span class="sub" aria-hidden="true">Any MIDI controller, a real <span class="glow">Live control surface</span></span></h1>
+    <h1 aria-label="SURFACE: any MIDI controller, a real Ableton Live control surface"><svg class="big" viewBox="0 0 1000 116" aria-hidden="true"><defs><mask id="inside" maskUnits="userSpaceOnUse" x="-20" y="-20" width="1040" height="156"><rect x="-20" y="-20" width="1040" height="156" fill="#fff"/><text x="4" y="110" textLength="992" lengthAdjust="spacing" fill="#000">SURFACE</text></mask></defs><text x="4" y="110" textLength="992" lengthAdjust="spacing" fill="none" stroke="var(--acc)" stroke-width="5.5" stroke-linejoin="round" mask="url(#inside)">SURFACE</text></svg><span class="sub" aria-hidden="true">Any MIDI controller, a real <span class="glow">Live control surface</span></span></h1>
     <span class="soon"><i></i>Live now · <b>free</b></span>
     <p class="what">Pick your controller, click a control on screen and <b>wiggle the one on your hardware</b>. Surface learns it, and when you're done it writes a complete <b>Python Remote Script</b> for Ableton Live, ready to drop into your User Remote Scripts folder.</p>
     <ul class="chips" aria-label="What it maps"><li>Session grid</li><li>Mixer</li><li>Transport</li><li>Navigation</li><li>Fixed length</li><li>LED feedback</li></ul>
